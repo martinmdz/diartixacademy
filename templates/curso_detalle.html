@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% block title %}{{ curso.titulo }} — DiartexAcademy{% endblock %}
+
+{% block content %}
+
+<!-- El sidebar y navbar cargan desde base.html normalmente -->
+<!-- Esta sección muestra el detalle del curso directamente en la URL /cursos/slug/ -->
+
+<!-- HOME (oculto, necesario para que el JS funcione con el sidebar) -->
+<section class="page-sec" id="sec-home">
+  <div id="videoHeaderWrap"></div>
+  <div class="home-hero" id="homeHero">
+    <div class="home-hero-left">
+      <h1>Aprendé sin límites con <span>DiartexAcademy</span></h1>
+      <p id="homeHeroDesc">Cursos de calidad para crecer y transformar tu vida.</p>
+      <div class="hero-stats">
+        <div class="h-stat"><div class="num" id="stat-cursos">0</div><div class="lbl">Cursos</div></div>
+        <div class="h-stat"><div class="num" id="stat-cats">0</div><div class="lbl">Categorías</div></div>
+        <div class="h-stat"><div class="num">⭐ 4.9</div><div class="lbl">Valoración</div></div>
+        <div class="h-stat"><div class="num">100%</div><div class="lbl">Online</div></div>
+      </div>
+    </div>
+    <div class="home-hero-right">
+      <div class="hero-image-placeholder" id="heroImageWrap"><span style="font-size:4rem;">🎓</span></div>
+      <div class="hero-motivational-icon">💡</div>
+      <h3>El conocimiento es poder</h3>
+      <p id="homeMotivText">Invertir en vos mismo es la mejor inversión que existe.</p>
+    </div>
+  </div>
+  <div id="bannerSliderWrap"></div>
+  <div class="cat-explore-grid" id="catExploreGrid"></div>
+  <div class="course-grid-square" id="featuredGrid"></div>
+</section>
+
+<!-- ALL COURSES (oculto) -->
+<section class="page-sec" id="sec-all">
+  <div class="sec-header"><div class="sec-title">Todos los <span>Cursos</span></div></div>
+  <div class="all-courses-filters">
+    <div class="filter-search">
+      <i class="fas fa-search" style="color:var(--muted);font-size:.8rem;"></i>
+      <input type="text" placeholder="Buscar curso..." id="allCoursesSearch" oninput="filterAllCourses()"/>
+    </div>
+    <select class="filter-select" id="allCatFilter" onchange="filterAllCourses()"><option value="">Todas las categorías</option></select>
+    <select class="filter-select" id="allSortFilter" onchange="filterAllCourses()">
+      <option value="default">Orden predeterminado</option>
+      <option value="masvendidos">Más vendidos</option>
+      <option value="populares">Más populares</option>
+      <option value="az">A–Z</option>
+      <option value="za">Z–A</option>
+    </select>
+  </div>
+  <div class="course-grid-square" id="allCoursesGrid"></div>
+  <div class="pagination" id="allCoursesPagination"></div>
+</section>
+
+<!-- CATEGORY (oculto) -->
+<section class="page-sec" id="sec-category">
+  <button class="detail-back-btn" onclick="goHome()"><i class="fas fa-arrow-left"></i> Volver</button>
+  <div class="sec-header"><div class="sec-title" id="catTitle"></div></div>
+  <div class="course-grid-square" id="categoryGrid"></div>
+</section>
+
+<!-- COURSE DETAIL — Este es el que se muestra directamente -->
+<section class="page-sec active" id="sec-detail">
+  <button class="detail-back-btn" id="detailBackBtn" onclick="goHome()">
+    <i class="fas fa-arrow-left"></i> Volver al inicio
+  </button>
+
+  <!-- Contenido renderizado desde Django directamente (SSR) -->
+  <div id="detailContent">
+
+    <!-- Banner del curso -->
+    <div class="detail-banner">
+      {% if curso.imagen_banner %}
+        <img src="{{ curso.imagen_banner }}" alt="{{ curso.titulo }}" onerror="this.style.display='none'"/>
+      {% endif %}
+      <span class="detail-banner-emoji">{{ curso.emoji }}</span>
+      <div class="detail-banner-overlay"></div>
+      {% if curso.categoria %}
+        <span class="detail-banner-cat cat-pill-{{ curso.categoria.key }}">{{ curso.categoria.nombre }}</span>
+      {% endif %}
+    </div>
+
+    <!-- Título -->
+    <div class="detail-title-wrap">
+      <div class="detail-title">{{ curso.titulo }}</div>
+    </div>
+
+    <!-- Botones de acción -->
+    <div class="detail-actions">
+      {% if curso.buy_url %}
+        <a class="btn-buy" href="{{ curso.buy_url }}" target="_blank">
+          <i class="fas fa-credit-card"></i> {{ curso.buy_text }}
+        </a>
+      {% endif %}
+      <button class="btn-fav" id="detailFavBtn" onclick="toggleFavDetail({{ curso.id }})">
+        <i class="fas fa-heart"></i> Agregar a favoritos
+      </button>
+      {% if curso.whatsapp %}
+        <a class="btn-wa" href="https://wa.me/{{ curso.whatsapp }}?text=Hola, quiero info sobre: {{ curso.titulo|urlencode }}" target="_blank">
+          <i class="fab fa-whatsapp"></i> Consultar por WhatsApp
+        </a>
+      {% endif %}
+    </div>
+
+    <!-- Bloques de contenido -->
+    {% for bloque in curso.bloques.all %}
+      {% if bloque.tipo == 'descripcion' %}
+        <div class="detail-block">
+          <h3><i class="fas fa-info-circle"></i> Descripción del Curso</h3>
+          <p class="detail-desc-text">{{ bloque.texto }}</p>
+        </div>
+
+      {% elif bloque.tipo == 'temario' %}
+        <div class="detail-block">
+          <h3><i class="fas fa-list-check"></i> ¿Qué aprenderás?</h3>
+          <ul class="temario-lista">
+            {% for item in bloque.contenido.splitlines %}
+              {% if item %}
+                <li>{{ item }}</li>
+              {% endif %}
+            {% endfor %}
+          </ul>
+        </div>
+
+      {% elif bloque.tipo == 'imagen' %}
+        {% if bloque.contenido %}
+          <img src="{{ bloque.contenido }}" alt="Imagen del curso" class="detail-extra-img"
+               onerror="this.style.display='none'"/>
+        {% endif %}
+
+      {% elif bloque.tipo == 'testimonio' %}
+        {# Los testimonios se agrupan abajo #}
+      {% endif %}
+    {% endfor %}
+
+    <!-- Testimonios agrupados -->
+    {% with testimonios=curso.bloques.filter %}
+      {% if curso.bloques.all|length > 0 %}
+        {% comment %}Filtrar testimonios{% endcomment %}
+        <div id="testimoniosSsr"></div>
+      {% endif %}
+    {% endwith %}
+
+    <!-- Botones finales -->
+    <div class="detail-bottom-actions">
+      {% if curso.buy_url %}
+        <a class="btn-buy" href="{{ curso.buy_url }}" target="_blank">
+          <i class="fas fa-book-open"></i> Adquirir Curso
+        </a>
+      {% endif %}
+      {% if curso.whatsapp %}
+        <a class="btn-wa" href="https://wa.me/{{ curso.whatsapp }}?text=Hola, quiero info sobre: {{ curso.titulo|urlencode }}" target="_blank">
+          <i class="fab fa-whatsapp"></i> Consultar por WhatsApp
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- FAVORITOS (oculto) -->
+<section class="page-sec" id="sec-favoritos">
+  <div class="sec-header"><div class="sec-title">Mis <span>Favoritos</span></div></div>
+  <div class="course-grid-square" id="favGrid"></div>
+  <div class="empty-state" id="favEmpty" style="display:none;">
+    <i class="fas fa-heart-broken"></i><p>Todavía no agregaste cursos a favoritos.</p>
+  </div>
+</section>
+
+<!-- SEARCH (oculto) -->
+<section class="page-sec" id="sec-search">
+  <button class="detail-back-btn" onclick="goHome()"><i class="fas fa-arrow-left"></i> Volver</button>
+  <div class="sec-header"><div class="sec-title">Resultados de <span>búsqueda</span></div></div>
+  <div class="search-tag" id="searchTag" style="display:none;"><i class="fas fa-search"></i> <span id="searchTagText"></span></div>
+  <div class="course-grid-square" id="searchGrid"></div>
+</section>
+
+<!-- CONTACTO (oculto) -->
+<section class="page-sec" id="sec-contacto">
+  <div class="sec-header"><div class="sec-title"><i class="fas fa-envelope" style="color:var(--primary);margin-right:8px;"></i>Contac<span>tanos</span></div></div>
+  <div class="contact-section" id="contactSection"></div>
+</section>
+
+<!-- ADMIN (oculto) -->
+<section class="page-sec" id="sec-admin">
+  <div class="sec-header"><div class="sec-title">Panel <span style="color:var(--gold);">Admin</span></div></div>
+  <div class="admin-grid" id="adminStats"></div>
+</section>
+<section class="page-sec" id="sec-admin-cursos">
+  <div class="sec-header">
+    <div class="sec-title">Gestionar <span style="color:var(--gold);">Cursos</span></div>
+    <button class="add-btn" onclick="openAddCourseModal()"><i class="fas fa-plus"></i> Agregar Curso</button>
+  </div>
+  <div class="admin-block">
+    <h3><i class="fas fa-list"></i> Lista de Cursos <span id="adminCursoCount"></span></h3>
+    <table class="admin-table">
+      <thead><tr><th>Título</th><th>Categoría</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody id="adminTableBody"></tbody>
+    </table>
+  </div>
+</section>
+<section class="page-sec" id="sec-admin-cats">
+  <div class="sec-header">
+    <div class="sec-title">Gestionar <span style="color:var(--gold);">Categorías</span></div>
+    <button class="add-btn gold" onclick="openAddCatModal()"><i class="fas fa-plus"></i> Nueva Categoría</button>
+  </div>
+  <div class="admin-block">
+    <table class="admin-table"><thead><tr><th>Nombre</th><th>Ícono</th><th>Color</th><th>Cursos</th><th>Acciones</th></tr></thead><tbody id="adminCatsTable"></tbody></table>
+  </div>
+</section>
+<section class="page-sec" id="sec-admin-banners">
+  <div class="sec-header">
+    <div class="sec-title">Gestionar <span style="color:var(--gold);">Banners</span></div>
+    <button class="add-btn" onclick="openAddBannerModal()"><i class="fas fa-plus"></i> Agregar Banner</button>
+  </div>
+  <div class="admin-block"><div id="adminBannersList"></div></div>
+</section>
+<section class="page-sec" id="sec-admin-inicio">
+  <div class="sec-header"><div class="sec-title">Panel <span style="color:var(--gold);">Inicio</span></div></div>
+  <div class="inicio-panel-card">
+    <h4><i class="fas fa-video"></i> Video de Cabecera</h4>
+    <div class="form-group"><input class="form-input" id="videoUrlInput" placeholder="https://www.youtube.com/embed/..."/></div>
+    <button class="btn-primary" onclick="saveVideoUrl()"><i class="fas fa-save"></i> Guardar</button>
+  </div>
+  <div class="inicio-panel-card">
+    <h4><i class="fas fa-image"></i> Imagen del Hero</h4>
+    <div class="form-group"><input class="form-input" id="heroImageUrl" placeholder="https://...imagen.jpg"/></div>
+    <button class="btn-primary" onclick="saveHeroImage()"><i class="fas fa-save"></i> Guardar</button>
+  </div>
+  <div class="inicio-panel-card">
+    <h4><i class="fas fa-align-left"></i> Textos del Hero</h4>
+    <div class="form-group"><textarea class="form-textarea" id="heroDescInput" rows="3"></textarea></div>
+    <div class="form-group"><textarea class="form-textarea" id="heroMotivInput" rows="3"></textarea></div>
+    <button class="btn-primary" onclick="saveHeroTexts()"><i class="fas fa-save"></i> Guardar</button>
+  </div>
+</section>
+<section class="page-sec" id="sec-admin-contacto">
+  <div class="sec-header">
+    <div class="sec-title">Gestionar <span style="color:var(--gold);">Contacto</span></div>
+    <button class="add-btn gold" onclick="openAddSocialModal()"><i class="fas fa-plus"></i> Agregar Red</button>
+  </div>
+  <div class="admin-block"><div id="adminSocialList"></div></div>
+  <div class="admin-block">
+    <div class="form-group"><input class="form-input" id="contactEmailInput" placeholder="tuemail@ejemplo.com"/></div>
+    <button class="btn-primary" onclick="saveContactEmail()"><i class="fas fa-save"></i> Guardar correo</button>
+  </div>
+</section>
+<section class="page-sec" id="sec-admin-logo">
+  <div class="sec-header"><div class="sec-title">Editar <span style="color:var(--gold);">Logo</span></div></div>
+  <div class="admin-block">
+    <div class="form-group"><input class="form-input" id="logoUrlInput" placeholder="https://...logo.png"/></div>
+    <div id="logoPreview" style="width:60px;height:60px;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,#1a7acc,var(--primary));display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:14px;">📚</div>
+    <button class="btn-primary" onclick="saveLogo()"><i class="fas fa-save"></i> Guardar Logo</button>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// En la página de detalle, el init() ya detecta el slug y muestra el curso correcto.
+// Además precargamos los datos del curso desde Django para mejor rendimiento.
+const CURSO_PRELOAD = {
+  id: {{ curso.id }},
+  slug: "{{ curso.slug }}",
+  title: "{{ curso.titulo|escapejs }}",
+  desc: "{{ curso.descripcion_corta|escapejs }}",
+  emoji: "{{ curso.emoji|escapejs }}",
+  cat: "{{ curso.categoria.key }}",
+  bannerUrl: "{{ curso.imagen_banner }}",
+  cardImageUrl: "{{ curso.imagen_card }}",
+  buyUrl: "{{ curso.buy_url }}",
+  buyText: "{{ curso.buy_text|escapejs }}",
+  whatsapp: "{{ curso.whatsapp }}",
+  hidden: {{ curso.oculto|yesno:"true,false" }},
+  featured: {{ curso.destacado|yesno:"true,false" }},
+  masvendido: {{ curso.mas_vendido|yesno:"true,false" }},
+  blocks: [
+    {% for bloque in curso.bloques.all %}
+      {% if bloque.tipo == 'descripcion' %}
+        {type: "descripcion", text: "{{ bloque.texto|escapejs }}"},
+      {% elif bloque.tipo == 'temario' %}
+        {type: "temario", items: [{% for item in bloque.contenido.splitlines %}{% if item %}"{{ item|escapejs }}",{% endif %}{% endfor %}]},
+      {% elif bloque.tipo == 'testimonio' %}
+        {type: "testimonio", text: "{{ bloque.texto|escapejs }}", author: "{{ bloque.autor|escapejs }}", stars: {{ bloque.estrellas }}},
+      {% elif bloque.tipo == 'imagen' %}
+        {type: "imagen", url: "{{ bloque.contenido|escapejs }}"},
+      {% endif %}
+    {% endfor %}
+  ]
+};
+
+// Sobreescribir init para insertar el curso preloaded antes de que la API termine
+const _origInit = init;
+init = async function() {
+  // Inyectar el curso preloaded mientras carga el resto
+  courses.push(CURSO_PRELOAD);
+  await _origInit();
+  // Si la API ya lo cargó, no duplicar
+  const duplicates = courses.filter(c => c.slug === CURSO_PRELOAD.slug);
+  if (duplicates.length > 1) {
+    courses = courses.filter((c, i) => !(c.slug === CURSO_PRELOAD.slug && i > 0));
+  }
+};
+</script>
+{% endblock %}

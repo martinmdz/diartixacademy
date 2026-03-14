@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}DiartixAcademy — Cursos Online{% endblock %}
+
+{% block content %}
+
+<!-- HOME -->
+<section class="page-sec active" id="sec-home">
+  <div id="videoHeaderWrap"></div>
+  <div class="home-hero" id="homeHero">
+    <div class="home-hero-left">
+      <h1>Aprendé sin límites con <span>DiartixAcademy</span></h1>
+      <p id="homeHeroDesc">Cursos de calidad en bienestar, educación, desarrollo personal y emprendimiento. Todo lo que necesitás para crecer y transformar tu vida.</p>
+      <div class="hero-stats">
+        <div class="h-stat"><div class="num" id="stat-cursos">0</div><div class="lbl">Cursos</div></div>
+        <div class="h-stat"><div class="num" id="stat-cats">0</div><div class="lbl">Categorías</div></div>
+        <div class="h-stat"><div class="num">⭐ 4.9</div><div class="lbl">Valoración</div></div>
+        <div class="h-stat"><div class="num">100%</div><div class="lbl">Online</div></div>
+      </div>
+    </div>
+    <div class="home-hero-right">
+      <div class="hero-image-placeholder" id="heroImageWrap">
+        <span style="font-size:4rem;">🎓</span>
+      </div>
+      <div class="hero-motivational-icon">💡</div>
+      <h3>El conocimiento es poder</h3>
+      <p id="homeMotivText">Cada curso que terminás es un paso más hacia la versión que querés ser. Invertir en vos mismo es la mejor inversión que existe.</p>
+    </div>
+  </div>
+  <div id="bannerSliderWrap"></div>
+  <div class="sec-header centered" style="margin-bottom:14px;">
+    <div class="sec-title">Explorar <span>Categorías</span></div>
+  </div>
+  <div class="cat-explore-grid" id="catExploreGrid"></div>
+  <div class="sec-header centered">
+    <div class="sec-title">Cursos <span>Destacados</span></div>
+  </div>
+  <div class="course-grid-square" id="featuredGrid"></div>
+</section>
+
+<!-- ALL COURSES -->
+<section class="page-sec" id="sec-all">
+  <div class="sec-header">
+    <div class="sec-title">Todos los <span>Cursos</span></div>
+  </div>
+  <div class="all-courses-filters">
+    <div class="filter-search">
+      <i class="fas fa-search" style="color:var(--muted);font-size:.8rem;"></i>
+      <input type="text" placeholder="Buscar curso..." id="allCoursesSearch" oninput="filterAllCourses()"/>
+    </div>
+    <select class="filter-select" id="allCatFilter" onchange="filterAllCourses()">
+      <option value="">Todas las categorías</option>
+    </select>
+    <select class="filter-select" id="allSortFilter" onchange="filterAllCourses()">
+      <option value="default">Orden predeterminado</option>
+      <option value="masvendidos">Más vendidos</option>
+      <option value="populares">Más populares</option>
+      <option value="az">A–Z</option>
+      <option value="za">Z–A</option>
+    </select>
+  </div>
+  <div class="course-grid-square" id="allCoursesGrid"></div>
+  <div class="pagination" id="allCoursesPagination"></div>
+</section>
+
+<!-- CATEGORY -->
+<section class="page-sec" id="sec-category">
+  <button class="detail-back-btn" onclick="goHome()"><i class="fas fa-arrow-left"></i> Volver</button>
+  <div class="sec-header">
+    <div class="sec-title" id="catTitle"></div>
+  </div>
+  <div class="course-grid-square" id="categoryGrid"></div>
+</section>
+
+<!-- COURSE DETAIL -->
+<section class="page-sec" id="sec-detail">
+  <button class="detail-back-btn" id="detailBackBtn"><i class="fas fa-arrow-left"></i> Volver</button>
+  <div id="detailContent"></div>
+</section>
+
+<!-- FAVORITOS -->
+<section class="page-sec" id="sec-favoritos">
+  <div class="sec-header"><div class="sec-title">Mis <span>Favoritos</span></div></div>
+  <div class="course-grid-square" id="favGrid"></div>
+  <div class="empty-state" id="favEmpty" style="display:none;">
+    <i class="fas fa-heart-broken"></i>
+    <p>Todavía no agregaste cursos a favoritos.</p>
+  </div>
+</section>
+
+<!-- SEARCH -->
+<section class="page-sec" id="sec-search">
+  <button class="detail-back-btn" onclick="goHome()"><i class="fas fa-arrow-left"></i> Volver</button>
+  <div class="sec-header"><div class="sec-title">Resultados de <span>búsqueda</span></div></div>
+  <div class="search-tag" id="searchTag" style="display:none;">
+    <i class="fas fa-search"></i> <span id="searchTagText"></span>
+  </div>
+  <div class="course-grid-square" id="searchGrid"></div>
+</section>
+
+<!-- CONTACTO -->
+<section class="page-sec" id="sec-contacto">
+  <div class="sec-header">
+    <div class="sec-title"><i class="fas fa-envelope" style="color:var(--primary);margin-right:8px;"></i>Contac<span>tanos</span></div>
+  </div>
+  <div class="contact-section" id="contactSection"></div>
+</section>
+
+<!-- ADMIN PANEL -->
+<section class="page-sec" id="sec-admin">
+  <div class="sec-header">
+    <div class="sec-title"><i class="fas fa-shield-alt" style="color:var(--gold);margin-right:8px;"></i>Panel <span style="color:var(--gold);">Admin</span></div>
+  </div>
+  <div class="admin-grid" id="adminStats"></div>
+</section>
+
+<!-- ADMIN: GESTIONAR CURSOS -->
+<section class="page-sec" id="sec-admin-cursos">
+  <div class="sec-header">
+    <div class="sec-title"><i class="fas fa-graduation-cap" style="color:var(--gold);margin-right:8px;"></i>Gestionar <span style="color:var(--gold);">Cursos</span></div>
+    <button class="add-btn" onclick="openAddCourseModal()"><i class="fas fa-plus"></i> Agregar Curso</button>
+  </div>
+  <div class="admin-block">
+    <h3><i class="fas fa-list"></i> Lista de Cursos <span id="adminCursoCount" style="font-size:.8rem;color:var(--muted);font-family:'Plus Jakarta Sans',sans-serif;font-weight:400;"></span></h3>
+    <table class="admin-table">
+      <thead><tr><th>Título</th><th>Categoría</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody id="adminTableBody"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ADMIN: GESTIONAR CATEGORÍAS -->
+<section class="page-sec" id="sec-admin-cats">
+  <div class="sec-header">
+    <div class="sec-title"><i class="fas fa-layer-group" style="color:var(--gold);margin-right:8px;"></i>Gestionar <span style="color:var(--gold);">Categorías</span></div>
+    <button class="add-btn gold" onclick="openAddCatModal()"><i class="fas fa-plus"></i> Nueva Categoría</button>
+  </div>
+  <div class="admin-block">
+    <h3><i class="fas fa-list"></i> Categorías</h3>
+    <table class="admin-table">
+      <thead><tr><th>Nombre</th><th>Ícono</th><th>Color</th><th>Cursos</th><th>Acciones</th></tr></thead>
+      <tbody id="adminCatsTable"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ADMIN: GESTIONAR BANNERS -->
+<section class="page-sec" id="sec-admin-banners">
+  <div class="sec-header">
+    <div class="sec-title"><i class="fas fa-images" style="color:var(--gold);margin-right:8px;"></i>Gestionar <span style="color:var(--gold);">Banners</span></div>
+    <button class="add-btn" onclick="openAddBannerModal()"><i class="fas fa-plus"></i> Agregar Banner</button>
+  </div>
+  <div class="admin-block">
+    <h3><i class="fas fa-image"></i> Banners del Slider</h3>
+    <div id="adminBannersList"></div>
+  </div>
+</section>
+
+<!-- ADMIN: PANEL INICIO -->
+<section class="page-sec" id="sec-admin-inicio">
+  <div class="sec-header">
+    <div class="sec-title"><i class="fas fa-home" style="color:var(--gold);margin-right:8px;"></i>Gestionar <span style="color:var(--gold);">Panel Inicio</span></div>
+  </div>
+  <div class="inicio-panel-card">
+    <h4><i class="fas fa-video"></i> Video de Cabecera</h4>
+    <div class="form-group">
+      <label class="form-label">URL del video (YouTube embed, mp4, etc.)</label>
+      <input class="form-input" id="videoUrlInput" placeholder="https://www.youtube.com/embed/..."/>
+      <div class="form-hint">Usá una URL de embed de YouTube o un link directo a .mp4</div>
+    </div>
+    <button class="btn-primary" onclick="saveVideoUrl()"><i class="fas fa-save"></i> Guardar URL de Video</button>
+  </div>
+  <div class="inicio-panel-card">
+    <h4><i class="fas fa-image"></i> Imagen del Hero (derecha)</h4>
+    <div class="form-group">
+      <label class="form-label">URL de imagen</label>
+      <input class="form-input" id="heroImageUrl" placeholder="https://...imagen.jpg"/>
+    </div>
+    <button class="btn-primary" onclick="saveHeroImage()"><i class="fas fa-save"></i> Guardar imagen</button>
+  </div>
+  <div class="inicio-panel-card">
+    <h4><i class="fas fa-align-left"></i> Textos del Hero</h4>
+    <div class="form-group">
+      <label class="form-label">Descripción principal</label>
+      <textarea class="form-textarea" id="heroDescInput" rows="3"></textarea>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Texto motivacional (derecha)</label>
+      <textarea class="form-textarea" id="heroMotivInput" rows="3"></textarea>
+    </div>
+    <button class="btn-primary" onclick="saveHeroTexts()"><i class="fas fa-save"></i> Guardar textos</button>
+  </div>
+</section>
+
+<!-- ADMIN: GESTIONAR CONTACTO -->
+<section class="page-sec" id="sec-admin-contacto">
+  <div class="sec-header">
+    <div class="sec-title"><i class="fas fa-address-book" style="color:var(--gold);margin-right:8px;"></i>Gestionar <span style="color:var(--gold);">Contacto</span></div>
+    <button class="add-btn gold" onclick="openAddSocialModal()"><i class="fas fa-plus"></i> Agregar Red</button>
+  </div>
+  <div class="admin-block">
+    <h4 style="font-family:'Fraunces',serif;font-size:.85rem;font-weight:800;color:var(--primary);margin-bottom:14px;">Redes Sociales y Contacto</h4>
+    <div id="adminSocialList"></div>
+  </div>
+  <div class="admin-block">
+    <h4 style="font-family:'Fraunces',serif;font-size:.85rem;font-weight:800;color:var(--primary);margin-bottom:14px;"><i class="fas fa-envelope"></i> Correo destino de mensajes</h4>
+    <div class="form-group">
+      <label class="form-label">Email donde recibís los mensajes de clientes</label>
+      <input class="form-input" id="contactEmailInput" placeholder="tuemail@ejemplo.com"/>
+    </div>
+    <button class="btn-primary" onclick="saveContactEmail()"><i class="fas fa-save"></i> Guardar correo</button>
+  </div>
+</section>
+
+<!-- ADMIN: EDITAR LOGO -->
+<section class="page-sec" id="sec-admin-logo">
+  <div class="sec-header">
+    <div class="sec-title"><i class="fas fa-image" style="color:var(--gold);margin-right:8px;"></i>Editar <span style="color:var(--gold);">Logo</span></div>
+  </div>
+  <div class="admin-block">
+    <h3><i class="fas fa-image"></i> Logo del Sidebar</h3>
+    <div class="form-group">
+      <label class="form-label">URL de imagen cuadrada para el logo</label>
+      <input class="form-input" id="logoUrlInput" placeholder="https://...logo.png"/>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label class="form-label">Vista previa</label>
+      <div id="logoPreview" style="width:60px;height:60px;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,#1a7acc,var(--primary));display:flex;align-items:center;justify-content:center;font-size:1.5rem;">📚</div>
+    </div>
+    <button class="btn-primary" onclick="saveLogo()"><i class="fas fa-save"></i> Guardar Logo</button>
+  </div>
+</section>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Actualizar estadísticas del hero cuando carguen los datos
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => {
+      const statCats = document.getElementById('stat-cats');
+      if (statCats) statCats.textContent = CATEGORIES.length;
+    }, 1500);
+  });
+</script>
+{% endblock %}

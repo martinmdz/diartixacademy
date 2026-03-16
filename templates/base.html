@@ -414,6 +414,11 @@ body.dark-mode .site-footer{background:#0a0d1a;}
     <button class="modal-close" onclick="closeModal('registerModal')"><i class="fas fa-times"></i></button>
     <h3><i class="fas fa-user-plus"></i> Crear Cuenta</h3>
     <div class="form-group">
+      <label class="form-label">Tu nombre o nick</label>
+      <input class="form-input" id="regUsername" type="text" placeholder="Ej: Martín, ProfeAna, etc."/>
+    </div>
+    
+    <div class="form-group">
       <label class="form-label">Email</label>
       <input class="form-input" id="regEmail" type="email" placeholder="tu@email.com"/>
     </div>
@@ -823,9 +828,10 @@ function renderTopbarAuth() {
   } else {
     el.innerHTML = `
       <div class="user-pill">
-        <div class="user-avatar ${currentUser.role==='admin'?'admin-av':''}">${(currentUser.username||currentUser.email||'U')[0].toUpperCase()}</div>
+        <div class="user-avatar">${(currentUser.username||currentUser.email)[0].toUpperCase()}</div>
+
         <div>
-          <div class="user-name">${currentUser.email}</div>
+          <div class="user-name">${currentUser.username || currentUser.email}</div>
           <div class="user-role-badge ${currentUser.role==='admin'?'admin':''}">${currentUser.role==='admin'?'Administrador':'Cliente'}</div>
         </div>
         <button class="logout-btn" onclick="doLogout()" title="Cerrar sesión"><i class="fas fa-sign-out-alt"></i></button>
@@ -851,14 +857,15 @@ async function doLogin() {
 }
 
 async function doRegister() {
+  const username = document.getElementById('regUsername').value.trim();
   const email = document.getElementById('regEmail').value.trim();
   const pass = document.getElementById('regPass').value;
-  if (!email||!pass) { showToast('Completá todos los campos','error'); return; }
+  if (!username||!email||!pass) { showToast('Completá todos los campos','error'); return; }
   try {
-    const user = await apiFetch(API.auth.register, {
-      method: 'POST',
-      body: JSON.stringify({email, username: email, password: pass})
-    });
+  const user = await apiFetch(API.auth.register, {
+    method: 'POST',
+    body: JSON.stringify({email, username, password: pass})
+  });
     currentUser = user;
     closeModal('registerModal');
     renderTopbarAuth(); renderSidebar();

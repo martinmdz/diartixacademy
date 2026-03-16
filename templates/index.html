@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}DiartixAcademy — Cursos Online{% endblock %}
+{% block title %}DiartexAcademy — Cursos Online{% endblock %}
 
 {% block content %}
 
@@ -8,7 +8,7 @@
   <div id="videoHeaderWrap"></div>
   <div class="home-hero" id="homeHero">
     <div class="home-hero-left">
-      <h1>Aprendé sin límites con <span>DiartixAcademy</span></h1>
+      <h1>Aprendé sin límites con <span>DiartexAcademy</span></h1>
       <p id="homeHeroDesc">Cursos de calidad en bienestar, educación, desarrollo personal y emprendimiento. Todo lo que necesitás para crecer y transformar tu vida.</p>
       <div class="hero-stats">
         <div class="h-stat"><div class="num" id="stat-cursos">0</div><div class="lbl">Cursos</div></div>
@@ -117,7 +117,11 @@
 <section class="page-sec" id="sec-admin-cursos">
   <div class="sec-header">
     <div class="sec-title"><i class="fas fa-graduation-cap" style="color:var(--gold);margin-right:8px;"></i>Gestionar <span style="color:var(--gold);">Cursos</span></div>
-    <button class="add-btn" onclick="openAddCourseModal()"><i class="fas fa-plus"></i> Agregar Curso</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="add-btn" onclick="openAddCourseModal()"><i class="fas fa-plus"></i> Agregar Curso</button>
+      <button class="action-btn" onclick="exportarCursos()" style="border-color:rgba(52,211,153,.4);color:var(--green);padding:8px 14px;" title="Descargar Excel con todos los cursos"><i class="fas fa-file-excel"></i> Exportar</button>
+      <button class="action-btn" onclick="importarCursos()" style="border-color:rgba(62,166,255,.4);color:var(--primary);padding:8px 14px;" title="Importar cursos desde Excel"><i class="fas fa-upload"></i> Importar</button>
+    </div>
   </div>
   <div class="admin-block">
     <h3><i class="fas fa-list"></i> Lista de Cursos <span id="adminCursoCount" style="font-size:.8rem;color:var(--muted);font-family:'Plus Jakarta Sans',sans-serif;font-weight:400;"></span></h3>
@@ -227,6 +231,139 @@
       <div id="logoPreview" style="width:60px;height:60px;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,#1a7acc,var(--primary));display:flex;align-items:center;justify-content:center;font-size:1.5rem;">📚</div>
     </div>
     <button class="btn-primary" onclick="saveLogo()"><i class="fas fa-save"></i> Guardar Logo</button>
+  </div>
+</section>
+
+<!-- ADMIN: USUARIOS -->
+<section class="page-sec" id="sec-admin-users">
+  <div class="sec-header">
+    <div class="sec-title"><i class="fas fa-users" style="color:var(--gold);margin-right:8px;"></i>Lista de <span style="color:var(--gold);">Usuarios</span></div>
+    <button class="action-btn" onclick="copyAllEmails()" style="border-color:rgba(52,211,153,.4);color:var(--green);padding:8px 14px;">
+      <i class="fas fa-copy"></i> Copiar todos los emails
+    </button>
+  </div>
+  <div class="admin-block">
+    <h3>
+      <span><i class="fas fa-users"></i> Usuarios registrados <span id="adminUserCount" style="font-size:.8rem;color:var(--muted);font-family:'Plus Jakarta Sans',sans-serif;font-weight:400;"></span></span>
+    </h3>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Registrado</th>
+          <th>Último acceso</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="adminUsersTableBody">
+        <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Cargando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ADMIN: ROLES -->
+<section class="page-sec" id="sec-admin-roles">
+  <div class="sec-header">
+    <div class="sec-title"><i class="fas fa-id-badge" style="color:var(--gold);margin-right:8px;"></i>Gestionar <span style="color:var(--gold);">Roles</span></div>
+  </div>
+  <div class="admin-block">
+    <h3><i class="fas fa-info-circle"></i> ¿Qué puede hacer cada rol?</h3>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:18px;">Los roles determinan qué puede ver y hacer cada usuario en la plataforma. El color de cada rol en el panel indica su nivel de acceso.</p>
+    <div id="rolesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+  </div>
+</section>
+
+<!-- ADMIN: CONFIGURACIÓN VISUAL -->
+<section class="page-sec" id="sec-admin-config">
+  <div class="sec-header">
+    <div class="sec-title"><i class="fas fa-cog" style="color:var(--gold);margin-right:8px;"></i><span style="color:var(--gold);">Configuración</span> Visual</div>
+  </div>
+
+  <!-- Nombre y colores -->
+  <div class="admin-block">
+    <h3><i class="fas fa-palette"></i> Identidad de la app</h3>
+    <div class="form-grid">
+      <div class="form-group form-full">
+        <label class="form-label">Nombre de la aplicación</label>
+        <input class="form-input" id="cfgAppName" placeholder="DiartixAcademy"/>
+        <div class="form-hint">Aparece en el navbar, sidebar, footer y título de la página</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Color primario</label>
+        <input class="form-input" type="color" id="cfgPrimary" value="#1a7acc"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Color de acento</label>
+        <input class="form-input" type="color" id="cfgAccent" value="#ff8c42"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <div class="admin-block">
+    <h3><i class="fas fa-grip-horizontal"></i> Navbar</h3>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="cfgNavTransparent" style="width:16px;height:16px;accent-color:var(--primary);"/>
+        <span style="font-size:.85rem;color:var(--text);">Navbar transparente (fondo sin color)</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <div class="admin-block">
+    <h3><i class="fas fa-columns"></i> Sidebar</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Modo del sidebar</label>
+        <select class="form-select" id="cfgSidebarMode">
+          <option value="fixed">Fijo y visible (default)</option>
+          <option value="mini">Mini — solo iconos</option>
+          <option value="hidden">Oculto — solo con botón</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Posición del sidebar</label>
+        <select class="form-select" id="cfgSidebarPos">
+          <option value="left">Izquierda (default)</option>
+          <option value="right">Derecha</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="admin-block">
+    <h3><i class="fas fa-minus-square"></i> Footer</h3>
+    <div class="form-group">
+      <label class="form-label">Contenido del footer</label>
+      <input class="form-input" id="cfgFooterContent" placeholder="DiartixAcademy | San Rafael, Mendoza"/>
+    </div>
+    <div class="form-group">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+        <input type="checkbox" id="cfgFooterFixed" style="width:16px;height:16px;accent-color:var(--primary);" checked/>
+        <span style="font-size:.85rem;color:var(--text);">Footer fijo al fondo (siempre visible al final)</span>
+      </label>
+    </div>
+  </div>
+
+  <button class="btn-primary" onclick="applyConfig()"><i class="fas fa-check"></i> Aplicar cambios</button>
+  <p style="font-size:.72rem;color:var(--muted);margin-top:10px;">Los cambios se aplican inmediatamente en esta sesión. Para que sean permanentes, guardá los valores en la base de datos (próximamente).</p>
+</section>
+
+<!-- ADMIN: ESTADÍSTICAS -->
+<section class="page-sec" id="sec-admin-stats">
+  <div class="sec-header">
+    <div class="sec-title"><i class="fas fa-chart-bar" style="color:var(--gold);margin-right:8px;"></i>Estadísticas y <span style="color:var(--gold);">Ventas</span></div>
+    <button class="action-btn" onclick="renderStats()" style="border-color:rgba(62,166,255,.3);color:var(--primary);padding:8px 14px;">
+      <i class="fas fa-sync-alt"></i> Actualizar
+    </button>
+  </div>
+  <div id="statsContent">
+    <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando estadísticas...</p></div>
   </div>
 </section>
 

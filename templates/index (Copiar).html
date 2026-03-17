@@ -36,16 +36,6 @@
     <div class="sec-title" id="featuredCoursesTitle">Cursos <span>Destacados</span></div>
   </div>
   <div class="course-grid-square" id="featuredGrid"></div>
-
-  <!-- ¿QUÉ NOS MOTIVA? — dentro de sec-home para que solo aparezca en inicio -->
-  <div id="motivaSection" style="margin:32px 0;">
-    <div style="text-align:center;margin-bottom:20px;">
-      <h2 style="font-family:'Fraunces',serif;font-size:1.4rem;font-weight:800;color:var(--text);">¿Qué nos <span style="color:var(--primary);">motiva</span>?</h2>
-    </div>
-    <p id="motivaText" style="font-size:.95rem;color:var(--muted);line-height:1.8;text-align:center;max-width:700px;margin:0 auto;">
-      Creemos que el acceso al conocimiento es un derecho. Cada curso que creamos busca transformar vidas reales, con contenido práctico y de calidad.
-    </p>
-  </div>
 </section>
 
 <!-- ALL COURSES -->
@@ -274,7 +264,6 @@
   <div class="sec-header">
     <div class="sec-title"><i class="fas fa-address-book" style="color:var(--gold);margin-right:8px;"></i>Gestionar <span style="color:var(--gold);">Contacto</span></div>
     <button class="add-btn gold" onclick="openAddSocialModal()"><i class="fas fa-plus"></i> Agregar Red</button>
-    <button class="action-btn" onclick="SITE_CONFIG.showContactoSidebar=!SITE_CONFIG.showContactoSidebar;renderSidebar();showToast(SITE_CONFIG.showContactoSidebar?'Contáctanos visible':'Contáctanos oculto del sidebar','success');" style="border-color:rgba(240,192,64,.3);color:var(--gold);padding:8px 14px;"><i class="fas fa-eye-slash"></i> Ocultar/mostrar en sidebar</button>
   </div>
   <div class="admin-block">
     <h4 style="font-family:'Fraunces',serif;font-size:.85rem;font-weight:800;color:var(--primary);margin-bottom:14px;">Redes Sociales y Contacto</h4>
@@ -410,101 +399,6 @@
   </div>
 </section>
 
-<!-- ACERCA DE NOSOTROS -->
-<section class="page-sec" id="sec-about">
-  <div class="sec-header">
-    <div class="sec-title">Acerca de <span>Nosotros</span></div>
-  </div>
-  <div id="aboutPageContent" class="about-block">
-    <p style="color:var(--muted);font-size:.88rem;">Cargando...</p>
-  </div>
-</section>
-
-<!-- ADMIN: GESTIONAR ACERCA DE NOSOTROS -->
-<section class="page-sec" id="sec-admin-about">
-  <div class="sec-header">
-    <div class="sec-title"><i class="fas fa-info-circle" style="color:#e11d48;margin-right:8px;"></i>Gestionar <span style="color:#e11d48;">Acerca de Nosotros</span></div>
-    <div style="display:flex;gap:8px;">
-      <button class="action-btn" onclick="SITE_CONFIG.showAboutSidebar=!SITE_CONFIG.showAboutSidebar;renderSidebar();showToast('Visibilidad actualizada','success');"
-        style="border-color:rgba(240,192,64,.3);color:var(--gold);padding:8px 14px;">
-        <i class="fas fa-eye-slash"></i> Ocultar/mostrar en sidebar
-      </button>
-      <button class="btn-primary" style="background:linear-gradient(135deg,#b91c1c,#e11d48);" onclick="applyAboutConfig()">
-        <i class="fas fa-check"></i> Aplicar cambios
-      </button>
-    </div>
-  </div>
-  <div class="admin-block">
-    <h3><i class="fas fa-heading"></i> Título y Contenido</h3>
-    <div class="form-group">
-      <label class="form-label">Título</label>
-      <input class="form-input" id="aboutCfgTitle" placeholder="Acerca de Nosotros"/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Texto</label>
-      <textarea class="form-textarea" id="aboutCfgText" rows="5" placeholder="Somos una plataforma de aprendizaje online..."></textarea>
-    </div>
-    <div class="form-grid">
-      <div class="form-group">
-        <label class="form-label">Alineación del texto</label>
-        <select class="form-select" id="aboutCfgAlign">
-          <option value="center">Centrado</option>
-          <option value="left">Izquierda</option>
-          <option value="right">Derecha</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Tamaño de fuente</label>
-        <select class="form-select" id="aboutCfgFontSize">
-          <option value=".85rem">Pequeño</option>
-          <option value="1rem" selected>Normal</option>
-          <option value="1.1rem">Grande</option>
-          <option value="1.25rem">Muy grande</option>
-        </select>
-      </div>
-    </div>
-    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:14px;">
-      <input type="checkbox" id="aboutCfgBold" style="accent-color:var(--primary);"/>
-      <span style="font-size:.85rem;">Texto en negrita</span>
-    </label>
-  </div>
-  <div class="admin-block">
-    <h3><i class="fas fa-image"></i> Imagen acompañante (opcional)</h3>
-    <div class="form-group">
-      <label class="form-label">URL de imagen</label>
-      <input class="form-input" id="aboutCfgImageUrl" placeholder="https://...imagen.jpg"/>
-    </div>
-    <div class="form-grid">
-      <div class="form-group">
-        <label class="form-label">Posición de la imagen</label>
-        <select class="form-select" id="aboutCfgImgPos">
-          <option value="left">Izquierda del texto</option>
-          <option value="right">Derecha del texto</option>
-        </select>
-      </div>
-    </div>
-    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-      <input type="checkbox" id="aboutCfgShowImg" style="accent-color:var(--primary);"/>
-      <span style="font-size:.85rem;">Mostrar imagen</span>
-    </label>
-  </div>
-</section>
-
-<!-- ADMIN: GESTIONAR LINKS EXTERNOS -->
-<section class="page-sec" id="sec-admin-links">
-  <div class="sec-header">
-    <div class="sec-title"><i class="fas fa-external-link-alt" style="color:#a78bfa;margin-right:8px;"></i>Agregar <span style="color:#a78bfa;">Links Externos</span></div>
-    <button class="btn-primary" style="background:linear-gradient(135deg,#6d28d9,#a78bfa);" onclick="openAddLinkModal()">
-      <i class="fas fa-plus"></i> Agregar Enlace
-    </button>
-  </div>
-  <div class="admin-block">
-    <h3><i class="fas fa-info-circle"></i> ¿Cómo funcionan?</h3>
-    <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Los enlaces aparecen en el sidebar justo encima de "Acerca de nosotros". Al hacer clic abren en una nueva pestaña. Podés agregar tu tienda, redes sociales, o cualquier página externa.</p>
-    <div id="extLinksList" style="display:flex;flex-direction:column;gap:8px;"></div>
-  </div>
-</section>
-
 <!-- TODAS LAS CATEGORÍAS -->
 <section class="page-sec" id="sec-all-cats">
   <div class="sec-header">
@@ -629,19 +523,20 @@
           <option value="hidden">Oculto — solo con botón</option>
         </select>
       </div>
-      <!-- Posición del sidebar: fija a la izquierda por ahora -->
+      <div class="form-group">
+        <label class="form-label">Posición del sidebar</label>
+        <select class="form-select" id="cfgSidebarPos">
+          <option value="left">Izquierda (default)</option>
+          <option value="right">Derecha</option>
+        </select>
+      </div>
     </div>
   </div>
 
   <!-- Footer config moved to Gestionar Footer section -->
 
-  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;">
-    <button class="btn-primary" onclick="applyConfig()"><i class="fas fa-check"></i> Aplicar cambios</button>
-    <button class="btn-ghost" onclick="resetVisualConfig()" style="border-color:rgba(248,113,113,.4);color:var(--red);">
-      <i class="fas fa-undo"></i> Resetear a valores por defecto
-    </button>
-  </div>
-  <p style="font-size:.72rem;color:var(--muted);margin-top:10px;">Los cambios se guardan localmente en el navegador.</p>
+  <button class="btn-primary" onclick="applyConfig()"><i class="fas fa-check"></i> Aplicar cambios</button>
+  <p style="font-size:.72rem;color:var(--muted);margin-top:10px;">Los cambios se aplican inmediatamente en esta sesión. Para que sean permanentes, guardá los valores en la base de datos (próximamente).</p>
 </section>
 
 <!-- SUPERADMIN: GESTIONAR FOOTER -->
@@ -677,25 +572,16 @@
       <div class="form-group">
         <label class="form-label">Columna izquierda — País / Ubicación</label>
         <input class="form-input" id="footerCfgCountry" placeholder="San Rafael, Mendoza, Argentina"/>
-        <label class="form-label" style="margin-top:6px;">Alineación columna izquierda</label>
-        <select class="form-select" id="footerCfgLeftAlign">
-          <option value="left">Izquierda (default)</option>
-          <option value="center">Centrado</option>
-          <option value="right">Derecha</option>
-        </select>
+        <div class="form-hint">Aparece debajo del nombre de la app con un ícono de ubicación.</div>
       </div>
       <div class="form-group">
         <label class="form-label">Columna central — Texto libre</label>
-        <input class="form-input" id="footerCfgCenter" placeholder="Ej: © 2025 DiartixAcademy."/>
-        <label class="form-label" style="margin-top:6px;">Alineación columna central</label>
-        <select class="form-select" id="footerCfgCenterAlign"><option value="center">Centrado</option><option value="left">Izquierda</option><option value="right">Derecha</option></select>
+        <input class="form-input" id="footerCfgCenter" placeholder="Ej: © 2025 DiartixAcademy. Todos los derechos reservados."/>
       </div>
     </div>
     <div class="form-group">
       <label class="form-label">Columna derecha — Texto libre</label>
-      <input class="form-input" id="footerCfgRight" placeholder="Ej: Términos · Privacidad"/>
-      <label class="form-label" style="margin-top:6px;">Alineación columna derecha</label>
-      <select class="form-select" id="footerCfgRightAlign"><option value="right">Derecha</option><option value="center">Centrado</option><option value="left">Izquierda</option></select>
+      <input class="form-input" id="footerCfgRight" placeholder="Ej: Términos y condiciones · Privacidad"/>
     </div>
   </div>
 

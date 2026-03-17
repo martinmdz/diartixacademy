@@ -140,45 +140,6 @@ body.dark-mode .sb-btn:hover{background:rgba(255,255,255,.03);}
 .sb-icon{font-size:.85rem;min-width:18px;}
 .sb-contacto-btn{border-top:1px solid var(--border);margin-top:auto;}
 
-/* ══ FILTER SELECTS ══ */
-.filter-select{background:var(--panel2);border:1px solid var(--border2);border-radius:8px;padding:7px 12px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:.82rem;outline:none;transition:border-color .2s;}
-.filter-select:focus{border-color:var(--primary);}
-/* ══ SECTION EDITOR OVERLAY ══ */
-.section-editor-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:8000;display:none;flex-direction:column;backdrop-filter:blur(4px);}
-.section-editor-overlay.open{display:flex;}
-.section-editor-header{background:var(--panel);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;}
-.section-editor-canvas{flex:1;overflow-y:auto;padding:20px;background:var(--bg);}
-.section-editor-preview{background:var(--panel);border:1px solid var(--border);border-radius:12px;min-height:200px;padding:20px;margin-bottom:16px;position:relative;}
-.section-editor-tools{background:var(--panel);border-top:1px solid var(--border);padding:12px 20px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex-shrink:0;}
-/* Draggable blocks inside editor */
-.editor-block{position:relative;background:var(--panel2);border:2px dashed var(--border2);border-radius:10px;padding:14px;margin-bottom:10px;cursor:move;transition:border-color .2s;}
-.editor-block:hover{border-color:var(--primary);}
-.editor-block.dragging{opacity:.5;}
-.editor-block-toolbar{display:flex;gap:4px;position:absolute;top:6px;right:6px;opacity:0;transition:opacity .2s;}
-.editor-block:hover .editor-block-toolbar{opacity:1;}
-.editor-block-btn{background:var(--panel);border:1px solid var(--border2);border-radius:6px;width:24px;height:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.65rem;color:var(--muted);transition:all .2s;}
-.editor-block-btn:hover{border-color:var(--primary);color:var(--primary);}
-.editor-block-btn.del:hover{border-color:var(--red);color:var(--red);}
-/* ══ USER DROPDOWN MINI MENU ══ */
-.user-pill{position:relative;cursor:pointer;}
-.user-dropdown{position:absolute;top:calc(100% + 8px);right:0;background:var(--panel);border:1px solid var(--border2);border-radius:12px;padding:6px;min-width:160px;box-shadow:0 12px 32px rgba(0,0,0,.2);z-index:300;display:none;}
-.user-dropdown.open{display:block;}
-.user-dropdown-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:8px;color:var(--muted);font-size:.82rem;cursor:pointer;transition:all .2s;background:none;border:none;width:100%;text-align:left;font-family:'Plus Jakarta Sans',sans-serif;}
-.user-dropdown-item:hover{background:rgba(62,166,255,.08);color:var(--primary);}
-.user-dropdown-item.danger{color:var(--red);}
-.user-dropdown-item.danger:hover{background:rgba(220,38,38,.08);}
-/* ══ PROFILE MODAL ══ */
-.profile-section{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px;}
-.profile-section h4{font-family:'Fraunces',serif;font-size:.85rem;font-weight:800;color:var(--primary);margin-bottom:12px;}
-/* ══ FOOTER FULL WIDTH (sidebar excluded via main flex) ══ */
-.site-footer{width:100%;}
-/* ══ ABOUT SECTION ══ */
-.about-block{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:16px;}
-/* ══ EXTERNAL LINKS SIDEBAR ══ */
-.sb-btn.ext-btn{color:var(--muted);}
-.sb-btn.ext-btn::before{background:#a78bfa;}
-.sb-btn.ext-btn:hover{color:#a78bfa;}
-.sb-btn.ext-btn.active{background:rgba(167,139,250,.07);color:#a78bfa;}
 /* ══ SIDEBAR MODES ══ */
 .sidebar.mini{width:52px !important;overflow:hidden;}
 .sidebar.mini .sb-logo-text,.sidebar.mini .sb-logo-sub,
@@ -463,7 +424,7 @@ body.dark-mode .social-admin-row{background:rgba(255,255,255,.02);}
     {% block content %}{% endblock %}
     <!-- FOOTER - inside main so it scrolls with content and appears at bottom -->
     <footer class="site-footer" id="siteFooter">
-      <div class="footer-col" id="footerLeftCol">
+      <div class="footer-col">
         <div class="footer-brand"><span class="app-name-primary">Diartix</span><span class="app-name-accent" style="color:var(--accent);">Academy</span></div>
         <div class="footer-country" id="footerCountryText">San Rafael, Mendoza, Argentina</div>
         <div class="footer-social-links" id="footerSocialLinks"></div>
@@ -703,83 +664,6 @@ body.dark-mode .social-admin-row{background:rgba(255,255,255,.02);}
   </div>
 </div>
 
-<!-- ═══ PROFILE MODAL ═══ -->
-<div class="modal-overlay" id="profileModal">
-  <div class="modal modal-wide">
-    <button class="modal-close" onclick="closeModal('profileModal')"><i class="fas fa-times"></i></button>
-    <h3><i class="fas fa-user-circle"></i> Mi Perfil</h3>
-
-    <!-- Favoritos count -->
-    <div class="profile-section" style="display:flex;align-items:center;gap:16px;">
-      <div style="width:54px;height:54px;border-radius:50%;background:var(--primary-glow);display:flex;align-items:center;justify-content:center;font-size:1.4rem;">
-        <i class="fas fa-user" style="color:var(--primary);"></i>
-      </div>
-      <div>
-        <div style="font-family:'Fraunces',serif;font-size:1.1rem;font-weight:800;" id="profileDisplayName"></div>
-        <button style="background:none;border:none;color:var(--primary);font-size:.8rem;cursor:pointer;padding:0;" onclick="closeModal('profileModal');showSection('favoritos')">
-          <i class="fas fa-heart" style="color:#f87171;"></i> Ver mis favoritos
-        </button>
-      </div>
-    </div>
-
-    <!-- Change email -->
-    <div class="profile-section">
-      <h4><i class="fas fa-envelope"></i> Cambiar Email</h4>
-      <div class="form-group">
-        <label class="form-label">Email actual / nuevo email</label>
-        <input class="form-input" id="profileEmail" type="email" placeholder="tu@email.com"/>
-      </div>
-    </div>
-
-    <!-- Change password -->
-    <div class="profile-section">
-      <h4><i class="fas fa-lock"></i> Cambiar Contraseña</h4>
-      <div class="form-group">
-        <label class="form-label">Contraseña actual</label>
-        <input class="form-input" id="profileCurrentPass" type="password" placeholder="••••••••"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Nueva contraseña</label>
-        <input class="form-input" id="profileNewPass" type="password" placeholder="••••••••"/>
-        <div class="form-hint">Dejá en blanco si no querés cambiarla</div>
-      </div>
-    </div>
-
-    <div class="modal-actions">
-      <button class="btn-ghost" onclick="closeModal('profileModal')">Cancelar</button>
-      <button class="btn-primary" onclick="saveProfileChanges()"><i class="fas fa-save"></i> Guardar cambios</button>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ EXTERNAL LINK MODAL ═══ -->
-<div class="modal-overlay" id="extLinkModal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal('extLinkModal')"><i class="fas fa-times"></i></button>
-    <h3 id="linkModalTitle"><i class="fas fa-external-link-alt" style="color:#a78bfa;"></i> Agregar Enlace</h3>
-    <input type="hidden" id="editLinkIdx"/>
-    <div class="form-group">
-      <label class="form-label">Nombre del enlace</label>
-      <input class="form-input" id="linkName" placeholder="Ej: Tienda Online"/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">URL</label>
-      <input class="form-input" id="linkUrl" placeholder="https://..."/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Ícono (fa-...)</label>
-      <input class="form-input" id="linkIcon" placeholder="fa-external-link-alt"/>
-      <div class="form-hint">Buscá iconos en fontawesome.com. Ej: fa-store, fa-globe, fa-shopping-cart</div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-ghost" onclick="closeModal('extLinkModal')">Cancelar</button>
-      <button class="btn-primary" style="background:linear-gradient(135deg,#6d28d9,#a78bfa);" onclick="saveExtLink()">
-        <i class="fas fa-save"></i> Guardar
-      </button>
-    </div>
-  </div>
-</div>
-
 <!-- ═══ SUBCATEGORY MODAL ═══ -->
 <div class="modal-overlay" id="subcatModal">
   <div class="modal">
@@ -905,18 +789,7 @@ async function apiFetch(url, options={}) {
     credentials: 'same-origin',
   };
   const res = await fetch(url, {...defaults, ...options});
-  if (!res.ok) {
-    const err = new Error(`HTTP ${res.status}`);
-    err.response = res;
-    err.status = res.status;
-    // Try to read error body
-    try {
-      err.data = await res.json();
-    } catch(_) {}
-    throw err;
-  }
-  // Handle 204 No Content
-  if (res.status === 204) return null;
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
@@ -949,19 +822,6 @@ let SITE_CONFIG = {
   ],
   footerBg: '#0a0d1a',
   footerContent: 'DiartixAcademy | San Rafael, Mendoza, Argentina',
-  showContactoSidebar: true,
-  showAboutSidebar: true,
-  externalLinks: [],
-  aboutContent: {
-    title: 'Acerca de Nosotros',
-    text: 'Somos una plataforma de aprendizaje online dedicada a brindarte los mejores cursos.',
-    align: 'center',
-    fontSize: '1rem',
-    bold: false,
-    imageUrl: '',
-    imagePos: 'left',
-    showImage: false,
-  },
   navButtons: [
     {id:'n1', label:'Inicio', icon:'fa-home', action:'goHome()', visible:true},
     {id:'n2', label:'Todos', icon:'', action:'showAllCourses()', visible:true},
@@ -1026,122 +886,12 @@ document.addEventListener('click', function(e) {
   if (wrap && !wrap.contains(e.target)) wrap.classList.remove('open');
 });
 
-// ═══════════════════════ PERSISTENCE (localStorage) ═══════════════════════
-const LS_SITE_CONFIG_KEY = 'diartix_site_config';
-const LS_HOME_SECTIONS_KEY = 'diartix_home_sections';
-
-function resetVisualConfig() {
-  if (!confirm('¿Resetear la configuración visual a los valores por defecto?')) return;
-  // Clear localStorage
-  try {
-    localStorage.removeItem('diartix_site_config');
-    localStorage.removeItem('diartix_home_sections');
-  } catch(e) {}
-  // Reset config object
-  SITE_CONFIG.sidebarMode = 'fixed';
-  SITE_CONFIG.primaryColor = '#1a7acc';
-  SITE_CONFIG.accentColor = '#ff8c42';
-  SITE_CONFIG.navbarTransparent = false;
-  SITE_CONFIG.footerBehavior = 'scroll';
-  // Apply all resets visually
-  applySidebarMode('fixed');
-  document.documentElement.style.setProperty('--primary', '#1a7acc');
-  document.documentElement.style.setProperty('--accent', '#ff8c42');
-  const topbar = document.querySelector('.topbar');
-  if (topbar) { topbar.style.background = ''; topbar.style.borderBottom = ''; }
-  // Update config form if open
-  const sm = document.getElementById('cfgSidebarMode');
-  if (sm) sm.value = 'fixed';
-  renderSidebar();
-  renderFooter();
-  showToast('✓ Config reseteada. El sidebar vuelve a modo completo.', 'success');
-}
-
-function saveConfigToStorage() {
-  try {
-    const json = JSON.stringify(SITE_CONFIG);
-    localStorage.setItem(LS_SITE_CONFIG_KEY, json);
-    // Verify save worked
-    const verify = localStorage.getItem(LS_SITE_CONFIG_KEY);
-    if (verify) {
-      console.log('✓ Config guardada en localStorage. appName:', SITE_CONFIG.appName, 'sidebarMode:', SITE_CONFIG.sidebarMode);
-    }
-  } catch(e) { 
-    console.error('✗ ERROR guardando config en localStorage:', e);
-    showToast('Error al guardar config localmente: ' + e.message, 'error');
-  }
-}
-
-function loadConfigFromStorage() {
-  try {
-    const saved = localStorage.getItem(LS_SITE_CONFIG_KEY);
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      // Validate - don't restore potentially broken values
-      if (!['fixed','mini','hidden'].includes(parsed.sidebarMode)) {
-        parsed.sidebarMode = 'fixed';
-      }
-      SITE_CONFIG = {...SITE_CONFIG, ...parsed};
-      console.log('✓ Config cargada:', SITE_CONFIG.appName, 'sidebar:', SITE_CONFIG.sidebarMode);
-    }
-  } catch(e) { console.warn('No se pudo cargar config desde localStorage:', e); }
-  try {
-    const savedSecs = localStorage.getItem(LS_HOME_SECTIONS_KEY);
-    if (savedSecs) {
-      const parsed = JSON.parse(savedSecs);
-      if (Array.isArray(parsed) && parsed.length > 0) HOME_SECTIONS = parsed;
-    }
-  } catch(e) {}
-}
-
-function saveHomeSectionsToStorage() {
-  try {
-    localStorage.setItem(LS_HOME_SECTIONS_KEY, JSON.stringify(HOME_SECTIONS));
-  } catch(e) {}
-}
-
 // ═══════════════════════ INIT ═══════════════════════
 async function init() {
-  // Cargar configuración guardada localmente
-  loadConfigFromStorage();
-  // Aplicar configuración guardada
-  if (SITE_CONFIG.primaryColor) document.documentElement.style.setProperty('--primary', SITE_CONFIG.primaryColor);
-  if (SITE_CONFIG.accentColor)  document.documentElement.style.setProperty('--accent',  SITE_CONFIG.accentColor);
-  if (SITE_CONFIG.footerBg) {
-    const fe = document.getElementById('siteFooter');
-    if (fe) fe.style.background = SITE_CONFIG.footerBg;
-  }
-  // Apply visual settings AFTER DOM paint
-  requestAnimationFrame(() => {
-    // Sidebar: always start fixed on load (user can change from config)
-    applySidebarMode('fixed');
-    applyFooterBehavior(SITE_CONFIG.footerBehavior || 'scroll');
-    if (SITE_CONFIG.footerBg) {
-      const fe = document.getElementById('siteFooter');
-      if (fe) fe.style.background = SITE_CONFIG.footerBg;
-    }
-    renderFooter();
-  });
-  // Apply saved app name
-  if (SITE_CONFIG.appName && SITE_CONFIG.appName !== 'DiartixAcademy') {
-    const appName = SITE_CONFIG.appName;
-    const camelMatch = appName.match(/^(.*[a-z])([A-Z][a-z]*)$/);
-    let pp, ap;
-    if (camelMatch) { pp = camelMatch[1]; ap = camelMatch[2]; }
-    else if (appName.includes(' ')) { const parts = appName.split(' '); ap = parts.pop(); pp = parts.join(' ') + ' '; }
-    else { pp = appName.slice(0, -3) || appName; ap = appName.slice(-3); }
-    document.querySelectorAll('.app-name-primary').forEach(el => el.textContent = pp);
-    document.querySelectorAll('.app-name-accent').forEach(el => el.textContent = ap);
-    document.title = appName + ' — Cursos Online';
-  window._APP_TITLE = appName;
-    const lt = document.querySelector('.sb-logo-text');
-    if (lt) lt.textContent = appName;
-  }
-
   // Verificar sesión activa
   try {
     const me = await apiFetch(API.auth.me);
-    currentUser = applyRoleOverrides(me);
+    currentUser = me;
   } catch(e) { currentUser = null; }
 
   // Cargar categorías y cursos desde la API
@@ -1179,16 +929,12 @@ async function init() {
   if (currentUser && currentUser.email === SUPERADMIN_EMAIL && currentUser.role !== 'superadmin') {
     currentUser.role = 'superadmin'; // Local override for display
   }
-  // Save SUPERADMIN_EMAIL globally for use in login/register
-  window._SUPERADMIN_EMAIL = SUPERADMIN_EMAIL;
 
   renderTopbarAuth();
   renderNavCatDropdown();
   renderSidebar();
   renderHeroStatsOnPage();
   renderFooter();
-  populateUserCatFilters();
-  renderHomeDynamicSections();
   // Apply footer behavior on load
   applyFooterBehavior(SITE_CONFIG.footerBehavior || 'scroll');
   renderFeatured();
@@ -1295,7 +1041,7 @@ function renderCatExplore() {
         <i class="fas ${cat.icon}"></i>
       </div>
       <div class="cat-explore-name">${cat.name}</div>
-
+      <div class="cat-explore-count">${count} cursos</div>
     </div>`;
   }).join('');
 }
@@ -1316,51 +1062,23 @@ function renderTopbarAuth() {
       <button class="tbtn" onclick="openModal('loginModal')">Ingresar</button>
       <button class="tbtn solid" onclick="openModal('registerModal')">Registrarse</button>`;
   } else {
-    const isAdmin = ['admin','superadmin','owner','staff','instructor'].includes(currentUser.role);
-    const roleLabel = {superadmin:'⚡ Superadmin',owner:'Owner',admin:'Admin',staff:'Staff',instructor:'Instructor'}[currentUser.role] || '';
-    const roleColor = {superadmin:'#e11d48',owner:'#7c3aed',admin:'var(--accent)',staff:'#0891b2',instructor:'#059669'}[currentUser.role] || '';
     el.innerHTML = `
-      <div class="user-pill" onclick="toggleUserDropdown(event)" id="userPill">
-        <div class="user-avatar ${isAdmin?'admin-av':''}">${(currentUser.username||currentUser.email)[0].toUpperCase()}</div>
+      <div class="user-pill">
+        <div class="user-avatar">${(currentUser.username||currentUser.email)[0].toUpperCase()}</div>
+
         <div>
           <div class="user-name">${currentUser.username || currentUser.email}</div>
-          ${roleLabel ? `<div class="user-role-badge admin" style="color:${roleColor};">${roleLabel}</div>` : ''}
+          <div class="user-role-badge ${['admin','superadmin','owner'].includes(currentUser.role)?'admin':''}" style="${currentUser.role==='superadmin'?'color:#e11d48;':currentUser.role==='owner'?'color:#7c3aed;':''}">${
+            currentUser.role==='superadmin'?'⚡ Superadmin':
+            currentUser.role==='owner'?'Owner':
+            currentUser.role==='admin'?'Administrador':
+            currentUser.role==='staff'?'Staff':
+            currentUser.role==='instructor'?'Instructor':'Cliente'
+          }</div>
         </div>
-        <i class="fas fa-chevron-down" style="font-size:.6rem;color:var(--muted);margin-left:4px;"></i>
-        <!-- Mini dropdown -->
-        <div class="user-dropdown" id="userDropdown" onclick="event.stopPropagation()">
-          <button class="user-dropdown-item" onclick="openProfileModal();toggleUserDropdown(event)">
-            <i class="fas fa-user-circle"></i> Ver perfil
-          </button>
-          <button class="user-dropdown-item" onclick="showSection('favoritos');toggleUserDropdown(event)">
-            <i class="fas fa-heart" style="color:#f87171;"></i> Mis favoritos
-          </button>
-          <div style="height:1px;background:var(--border);margin:4px 6px;"></div>
-          <button class="user-dropdown-item danger" onclick="doLogout()">
-            <i class="fas fa-sign-out-alt"></i> Cerrar sesión
-          </button>
-        </div>
+        <button class="logout-btn" onclick="doLogout()" title="Cerrar sesión"><i class="fas fa-sign-out-alt"></i></button>
       </div>`;
   }
-}
-
-function toggleUserDropdown(e) {
-  e && e.stopPropagation();
-  const dd = document.getElementById('userDropdown');
-  if (dd) dd.classList.toggle('open');
-}
-// Close dropdown on outside click
-document.addEventListener('click', () => {
-  document.getElementById('userDropdown')?.classList.remove('open');
-});
-
-function applyRoleOverrides(user) {
-  if (!user) return user;
-  // Developer account always gets superadmin locally
-  if (user.email === (window._SUPERADMIN_EMAIL || 'martinmorenomsr@gmail.com')) {
-    user.role = 'superadmin';
-  }
-  return user;
 }
 
 async function doLogin() {
@@ -1371,10 +1089,10 @@ async function doLogin() {
       method: 'POST',
       body: JSON.stringify({email, password: pass})
     });
-    currentUser = applyRoleOverrides(user);
+    currentUser = user;
     closeModal('loginModal');
     renderTopbarAuth(); renderSidebar(); renderVideoHeader();
-    showToast(`¡Bienvenido/a, ${user.username || user.email}!`,'success');
+    showToast('Bienvenido/a!','success');
   } catch(e) {
     showToast('Email o contraseña incorrectos','error');
   }
@@ -1390,10 +1108,10 @@ async function doRegister() {
     method: 'POST',
     body: JSON.stringify({email, username, password: pass})
   });
-    currentUser = applyRoleOverrides(user);
+    currentUser = user;
     closeModal('registerModal');
     renderTopbarAuth(); renderSidebar();
-    showToast(`¡Cuenta creada! Bienvenido/a, ${user.username || user.email}!`,'success');
+    showToast('¡Cuenta creada! Bienvenido/a','success');
   } catch(e) {
     showToast('Error al registrarse. El email puede ya estar en uso.','error');
   }
@@ -1481,7 +1199,7 @@ function renderSidebar() {
             </button>`).join('')}
           <div class="flyout-divider"></div>
           <button class="flyout-item view-all" onclick="showCatByKey('${cat.key}');closeFlyouts()">
-            <i class="fas fa-th-large" style="font-size:.7rem;"></i> Ver todos
+            <i class="fas fa-th-large" style="font-size:.7rem;"></i> Ver todos (${catCourses.length})
           </button>
         </div>
       </div>`;
@@ -1496,7 +1214,7 @@ function renderSidebar() {
         </button>
         <div class="cat-submenu ${isOpen?'open':''}" id="sub-${cat.key}">
           ${preview.map(c=>`<button class="sub-course-item" onclick="showCourseDetail(${c.id})"><i class="fas fa-circle sub-dot"></i>${c.title}</button>`).join('')}
-          ${catCourses.length>3?`<button class="sub-ver-mas" onclick="showCatByKey('${cat.key}')"><i class="fas fa-arrow-right"></i> Ver todos</button>`:''}
+          ${catCourses.length>3?`<button class="sub-ver-mas" onclick="showCatByKey('${cat.key}')"><i class="fas fa-arrow-right"></i> Ver todos (${catCourses.length})</button>`:''}
         </div>
       </div>`;
     }
@@ -1527,9 +1245,7 @@ function renderSidebar() {
       html += `<div class="sb-label" style="color:#e11d48;opacity:.8;">⚡ Superadmin</div>`;
       html += sbBtn('admin-logo',   'fa-image',        'Editar Logo',        "showAdminLogo()",             'super-btn','#e11d48');
       html += sbBtn('admin-config',       'fa-cog',      'Configuración Visual',"showAdminConfig()",          'super-btn','#e11d48');
-      html += sbBtn('admin-inicio-super','fa-th-list',  'Gestión Secciones Inicio',      "showAdminInicioSuper()",     'super-btn','#e11d48');
-      html += sbBtn('admin-about',         'fa-info-circle',      'Gestionar Acerca de',"showAdminAbout()",           'super-btn','#e11d48');
-      html += sbBtn('admin-links',         'fa-external-link-alt','Agregar Links',      "showAdminLinks()",           'super-btn','#e11d48');
+      html += sbBtn('admin-inicio-super','fa-home',     'Gestión Inicio',      "showAdminInicioSuper()",     'super-btn','#e11d48');
       html += sbBtn('admin-footer',        'fa-layer-group',      'Gestionar Footer',   "showAdminFooter()",          'super-btn','#e11d48');
       html += sbBtn('admin-emails',       'fa-envelope-open-text','Campañas Email',"showAdminEmails()",          'super-btn','#e11d48');
       html += sbBtn('admin-roles',  'fa-id-badge',     'Gestión de Roles',   "showAdminRoles()",            'super-btn','#e11d48');
@@ -1538,28 +1254,7 @@ function renderSidebar() {
   }
 
   html += `<div style="flex:1;min-height:16px;"></div>`;
-
-  // External links
-  if (SITE_CONFIG.externalLinks && SITE_CONFIG.externalLinks.filter(l=>!l.hidden).length > 0) {
-    SITE_CONFIG.externalLinks.filter(l=>!l.hidden).forEach(link => {
-      html += `<button class="sb-btn ext-btn" onclick="window.open('${link.url}','_blank')" title="${link.name} — abre en nueva pestaña">
-        <i class="fas ${link.icon||'fa-external-link-alt'} sb-icon" style="color:#a78bfa;"></i>
-        <span class="sb-btn-text">${link.name}</span>
-        <i class="fas fa-external-link-alt" style="font-size:.6rem;margin-left:auto;color:var(--muted2);"></i>
-      </button>`;
-    });
-  }
-
-  // Acerca de nosotros
-  if (SITE_CONFIG.showAboutSidebar !== false) {
-    html += sbBtn('about','fa-info-circle','Acerca de Nosotros',"showSection('about')",'','var(--muted)');
-  }
-
-  // Contáctanos
-  if (SITE_CONFIG.showContactoSidebar !== false) {
-    html += sbBtn('contacto','fa-envelope','Contáctanos',"showSection('contacto');renderContactSection()",'sb-contacto-btn','var(--primary)');
-  }
-
+  html += sbBtn('contacto','fa-envelope','Contáctanos',"showSection('contacto');renderContactSection()",'sb-contacto-btn','var(--primary)');
   nav.innerHTML = html;
 }
 
@@ -1577,11 +1272,6 @@ function showSection(name) {
   else console.warn('Section not found: sec-'+name);
   if (name==='favoritos') renderFavoritos();
   if (name==='admin') renderAdminStats();
-  // Reset URL when navigating away from course pages
-  if (!['detail'].includes(name)) {
-    history.pushState({section: name}, name, '/');
-    document.title = (window._APP_TITLE || 'DiartixAcademy') + ' — Cursos Online';
-  }
   document.querySelector('.main')?.scrollTo(0, 0);
   renderSidebar();
 }
@@ -1627,17 +1317,10 @@ function showAdminLogo() {
   document.getElementById('logoUrlInput').value = logoUrl;
   renderSidebar();
 }
-function goHome() {
-  currentCat=null;
-  showSection('home');
-  history.pushState({}, 'Inicio', '/');
-  document.title = (window._APP_TITLE || 'DiartixAcademy') + ' — Cursos Online';
-  renderCatExplore();
-}
+function goHome() { currentCat=null; showSection('home'); renderCatExplore(); }
 
 function showCatByKey(key) {
   currentSection='category'; currentCat=key;
-  renderSidebar();  // Update sidebar active state immediately
   let catCourses, catTitle, catBanner='', catColor='';
   if (key==='masvendidos') {
     catCourses = courses.filter(c=>c.masvendido&&!c.hidden);
@@ -1648,19 +1331,11 @@ function showCatByKey(key) {
     catTitle = 'Cursos <span>Destacados</span>';
     catColor = '#3ea6ff';
   } else {
-    let cat = CATEGORIES.find(c=>c.key===key);
-    let parentCat = null;
-    // Check if it's a subcategory
-    if (!cat) {
-      for (const c of CATEGORIES) {
-        const sub = c.subcats?.find(s=>s.key===key);
-        if (sub) { cat = sub; parentCat = c; break; }
-      }
-    }
+    const cat = CATEGORIES.find(c=>c.key===key);
     catCourses = courses.filter(c=>c.cat===key&&!c.hidden);
-    catTitle = cat ? cat.name : key.replace(/-/g,' ').replace(/\w/g,l=>l.toUpperCase());
-    catBanner = cat?.bannerUrl || parentCat?.bannerUrl || '';
-    catColor = cat?.color || parentCat?.color || '#3ea6ff';
+    catTitle = cat ? `${cat.name} <span>(${catCourses.length})</span>` : key;
+    catBanner = cat?.bannerUrl || '';
+    catColor = cat?.color || '#3ea6ff';
   }
   // Render banner header if available
   const bannerWrap = document.getElementById('catBannerHeader');
@@ -1670,23 +1345,12 @@ function showCatByKey(key) {
            <img src="${catBanner}" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.style.display='none'"/>
            <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 40%,rgba(0,0,0,.6));"></div>
          </div>`
-      : '';
+      : '';  // No bar when no banner
   }
-  // Breadcrumb - search subcats too for name
-  function findCatName(k) {
-    if (k==='masvendidos') return 'Más Vendidos';
-    if (k==='destacados') return 'Destacados';
-    const direct = CATEGORIES.find(c=>c.key===k);
-    if (direct) return direct.name;
-    for (const cat of CATEGORIES) {
-      const sub = cat.subcats?.find(s=>s.key===k);
-      if (sub) return sub.name;
-    }
-    return k.replace(/-/g,' ').replace(/\w/g, l=>l.toUpperCase());
-  }
+  // Breadcrumb
   const bcWrap = document.getElementById('catBreadcrumb');
   if (bcWrap) {
-    const catName = findCatName(key);
+    const catName = key==='masvendidos'?'Más Vendidos':key==='destacados'?'Destacados':(CATEGORIES.find(c=>c.key===key)?.name||key);
     bcWrap.innerHTML = `
       <button class="breadcrumb-item" onclick="goHome()">Inicio</button>
       <span class="breadcrumb-sep">›</span>
@@ -1698,9 +1362,6 @@ function showCatByKey(key) {
   document.getElementById('categoryGrid').innerHTML = catCourses.map(c=>renderCourseCardSq(c)).join('');
   document.querySelectorAll('.page-sec').forEach(s=>s.classList.remove('active'));
   document.getElementById('sec-category').classList.add('active');
-  history.pushState({cat: key}, catTitle || key, '/');
-  document.title = (window._APP_TITLE || 'DiartixAcademy') + ' — ' + (catTitle || key).replace(/<[^>]*>/g,'');
-  document.querySelector('.main')?.scrollTo(0,0);
   renderSidebar();
 }
 
@@ -1709,14 +1370,11 @@ function showAllCourses() {
   currentSection='all';
   document.querySelectorAll('.page-sec').forEach(s=>s.classList.remove('active'));
   document.getElementById('sec-all').classList.add('active');
-  history.pushState({}, 'Todos los cursos', '/');
-  document.title = (window._APP_TITLE || 'DiartixAcademy') + ' — Todos los Cursos';
   allCoursesPage = 1;
   const sel = document.getElementById('allCatFilter');
   sel.innerHTML = '<option value="">Todas las categorías</option>' +
     CATEGORIES.filter(c=>!c.hidden).map(c=>`<option value="${c.key}">${c.name}</option>`).join('');
   filterAllCourses();
-  document.querySelector('.main')?.scrollTo(0,0);
   renderSidebar();
 }
 
@@ -1890,15 +1548,20 @@ async function showCourseDetail(id) {
     });
   }
 
+  // Update URL
+  if (course.slug) history.pushState({courseId: id}, course.title, `/cursos/${course.slug}/`);
   // Scroll to top
   document.querySelector('.main')?.scrollTo(0, 0);
+
+  const prevCat2 = currentCat;
+  const prevSec2 = currentSection;
 
   document.getElementById('detailContent').innerHTML = `
     ${buildBreadcrumb(course)}
     <div class="detail-banner">
       ${course.bannerUrl ? `<img src="${course.bannerUrl}" alt="${course.title}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;" onerror="this.remove()"/>` : ''}
       <div class="detail-banner-overlay" style="z-index:2;"></div>
-      <span class="detail-banner-emoji" style="display:${course.bannerUrl?'none':'flex'};z-index:3;">${course.emoji}</span>
+      <span class="detail-banner-emoji" style="z-index:${course.bannerUrl?'0':'3'};opacity:${course.bannerUrl?'0':'1'};">${course.emoji}</span>
       <span class="detail-banner-cat ${catPillClass(course.cat)}" style="z-index:3;">${cat?cat.name:''}</span>
     </div>
     <div class="detail-title-wrap"><div class="detail-title">${course.title}</div></div>
@@ -1919,15 +1582,10 @@ async function showCourseDetail(id) {
   }
 
   const prevSec = currentSection; const prevCat = currentCat;
-  // Guardar estado para breadcrumb / navegación de vuelta
-  const backBtn = document.getElementById('detailBackBtn');
-  if (backBtn) {
-    backBtn.onclick = () => {
-      history.pushState({}, '', '/');
-      if (prevCat) showCatByKey(prevCat); else showSection(prevSec==='detail'?'home':prevSec);
-    };
-  }
-  // Actualizar URL una sola vez (evitar duplicado)
+  document.getElementById('detailBackBtn').onclick = () => {
+    history.pushState({}, '', '/');
+    if (prevCat) showCatByKey(prevCat); else showSection(prevSec==='detail'?'home':prevSec);
+  };
   showSection('detail');
 }
 
@@ -2313,19 +1971,16 @@ async function saveCourse() {
   if (!title) { showToast('El título es obligatorio','error'); return; }
   const catKey = document.getElementById('cCategory').value;
   if (!catKey) { showToast('Seleccioná una categoría','error'); return; }
-  // Always reload categories fresh from API to get correct integer IDs
-  let catObj = null;
-  try {
-    const cats = await apiFetch(API.categorias);
-    CATEGORIES = cats.map(c => ({key:c.key, name:c.nombre, icon:c.icono||'fa-star', color:c.color||'#3ea6ff', hidden:c.oculto, id:c.id}));
-    catObj = CATEGORIES.find(c => c.key === catKey);
-  } catch(e) {
-    catObj = CATEGORIES.find(c => c.key === catKey);
+  let catObj = CATEGORIES.find(c => c.key === catKey);
+  if (!catObj) {
+    // Try reloading categories from API
+    try {
+      const cats = await apiFetch(API.categorias);
+      CATEGORIES = cats.map(c => ({key:c.key, name:c.nombre, icon:c.icono||'fa-star', color:c.color||'#3ea6ff', hidden:c.oculto, id:c.id}));
+      catObj = CATEGORIES.find(c => c.key === catKey);
+    } catch(e) {}
   }
-  if (!catObj || !catObj.id) {
-    showToast('Categoría no encontrada. Asegurate de que la categoría esté guardada en la base de datos desde "Gestionar Categorías".','error');
-    return;
-  }
+  if (!catObj) { showToast('Categoría no encontrada. Creá la categoría primero desde "Gestionar Categorías".','error'); return; }
 
   // Slug sin acentos
   const slugBase = title.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -2371,20 +2026,8 @@ async function saveCourse() {
     closeModal('courseModal');
     renderAdminTable(); renderAdminStats(); renderFeatured(); renderCatExplore(); renderSidebar();
   } catch(e) {
-    console.error('Error guardando curso:', e);
-    // Try to get actual error message from server
-    let msg = 'Error al guardar.';
-    if (e.data) {
-      const d = e.data;
-      msg = 'Error: ' + (d.detail || d.categoria?.[0] || d.titulo?.[0] || d.non_field_errors?.[0] || JSON.stringify(d));
-    } else if (e.status === 403) {
-      msg = 'Sin permiso (403). Asegurate de estar logueado como admin.';
-    } else if (e.status === 401) {
-      msg = 'No autenticado (401). Iniciá sesión nuevamente.';
-    } else if (e.message) {
-      msg = 'Error de conexión: ' + e.message;
-    }
-    showToast(msg, 'error');
+    console.error('Error guardando:', e);
+    showToast('Error al guardar. Verificá que la categoría esté en la base de datos.', 'error');
   }
 }
 
@@ -2497,244 +2140,6 @@ function deleteSocial(id) {
   SOCIAL_LINKS.splice(SOCIAL_LINKS.findIndex(s=>s.id===id),1);
   renderAdminSocialList();
   showToast('Eliminado','success');
-}
-
-// ═══════════════════════ SECTION EDITOR ═══════════════════════
-let editorBlocks = [];
-let editorTargetSectionId = null;
-let editorDragIdx = null;
-
-function openSectionEditor(sectionId, sectionName) {
-  editorTargetSectionId = sectionId;
-  const sec = HOME_SECTIONS.find(s=>s.id===sectionId);
-  editorBlocks = sec?.blocks ? JSON.parse(JSON.stringify(sec.blocks)) : [];
-  document.getElementById('sectionEditorTitle').textContent = 'Editor — ' + (sectionName||'Sección');
-  document.getElementById('sectionEditorTitleText').value = sec?.displayTitle || '';
-  document.getElementById('sectionEditorShowTitle').checked = sec?.showTitle !== false;
-  renderEditorBlocks();
-  document.getElementById('sectionEditorOverlay').classList.add('open');
-}
-
-function closeSectionEditor() {
-  document.getElementById('sectionEditorOverlay').classList.remove('open');
-}
-
-function saveSectionEditor() {
-  const sec = HOME_SECTIONS.find(s=>s.id===editorTargetSectionId);
-  if (sec) {
-    sec.blocks = JSON.parse(JSON.stringify(editorBlocks));
-    sec.displayTitle = document.getElementById('sectionEditorTitleText').value;
-    sec.showTitle = document.getElementById('sectionEditorShowTitle').checked;
-  }
-  renderHomeDynamicSections();
-  saveHomeSectionsToStorage();
-  closeSectionEditor();
-  showToast('Sección guardada ✓ (guardado localmente)','success');
-}
-
-function addEditorBlock(type) {
-  const defaults = {
-    text:     {type:'text', content:'Escribí tu texto acá...', align:'center', fontSize:'1rem', bold:false, color:''},
-    image:    {type:'image', url:'', width:'200px', float:'none', alt:''},
-    banner:   {type:'banner', url:'', height:'220px', text:'', textAlign:'center'},
-    carousel: {type:'carousel', items:[], height:'220px'},
-    title:    {type:'title', content:'Título', align:'center', fontSize:'1.4rem', bold:true, color:''},
-  };
-  editorBlocks.push({...defaults[type], id:'b'+Date.now()});
-  renderEditorBlocks();
-}
-
-function removeEditorBlock(idx) {
-  editorBlocks.splice(idx,1);
-  renderEditorBlocks();
-}
-
-function moveEditorBlock(idx, dir) {
-  const j = idx+dir;
-  if (j<0||j>=editorBlocks.length) return;
-  [editorBlocks[idx],editorBlocks[j]] = [editorBlocks[j],editorBlocks[idx]];
-  renderEditorBlocks();
-}
-
-function renderEditorBlocks() {
-  const el = document.getElementById('sectionEditorBlocks');
-  if (!el) return;
-
-  if (!editorBlocks.length) {
-    el.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);font-size:.85rem;"><i class="fas fa-plus-circle" style="font-size:1.5rem;margin-bottom:8px;display:block;opacity:.4;"></i>Usá los botones de abajo para agregar bloques</div>';
-    return;
-  }
-
-  el.innerHTML = editorBlocks.map((b,i) => {
-    let previewHtml = '';
-    let editHtml = '';
-
-    if (b.type==='text' || b.type==='title') {
-      const sizeMap = {'1rem':'Normal','1.1rem':'Grande','1.25rem':'Muy grande','1.4rem':'Título','1.8rem':'Título grande','.85rem':'Pequeño'};
-      previewHtml = `<div style="text-align:${b.align||'center'};font-size:${b.fontSize||'1rem'};${b.bold?'font-weight:700;':''}${b.color?'color:'+b.color+';':''}">${b.content}</div>`;
-      editHtml = `
-        <textarea onchange="editorBlocks[${i}].content=this.value;renderEditorBlocks()" style="width:100%;background:var(--panel);border:1px solid var(--border2);border-radius:6px;padding:8px;color:var(--text);font-size:.85rem;resize:vertical;min-height:60px;">${b.content}</textarea>
-        <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;">
-          <select onchange="editorBlocks[${i}].align=this.value;renderEditorBlocks()" class="filter-select" style="font-size:.75rem;">
-            <option value="left" ${b.align==='left'?'selected':''}>Izquierda</option>
-            <option value="center" ${b.align==='center'?'selected':''}>Centrado</option>
-            <option value="right" ${b.align==='right'?'selected':''}>Derecha</option>
-          </select>
-          <select onchange="editorBlocks[${i}].fontSize=this.value;renderEditorBlocks()" class="filter-select" style="font-size:.75rem;">
-            ${Object.entries(sizeMap).map(([k,v])=>`<option value="${k}" ${b.fontSize===k?'selected':''}>${v}</option>`).join('')}
-          </select>
-          <label style="display:flex;align-items:center;gap:4px;font-size:.75rem;color:var(--muted);cursor:pointer;">
-            <input type="checkbox" ${b.bold?'checked':''} onchange="editorBlocks[${i}].bold=this.checked;renderEditorBlocks()" style="accent-color:var(--primary);"/> Negrita
-          </label>
-          <input type="color" value="${b.color||'#1a2540'}" onchange="editorBlocks[${i}].color=this.value;renderEditorBlocks()" style="width:30px;height:28px;border:none;border-radius:4px;cursor:pointer;" title="Color del texto"/>
-        </div>`;
-    } else if (b.type==='image') {
-      previewHtml = b.url
-        ? `<img src="${b.url}" style="max-width:${b.width||'200px'};border-radius:8px;float:${b.float||'none'};${b.float&&b.float!=='none'?'margin:'+(b.float==='left'?'0 16px 8px 0':'0 0 8px 16px')+';':''}" onerror="this.style.display='none'"/>`
-        : '<div style="width:120px;height:80px;background:var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);"><i class="fas fa-image"></i></div>';
-      editHtml = `
-        <input class="filter-select" value="${b.url}" onchange="editorBlocks[${i}].url=this.value;renderEditorBlocks()" placeholder="URL de la imagen" style="width:100%;margin-bottom:6px;"/>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <select onchange="editorBlocks[${i}].float=this.value;renderEditorBlocks()" class="filter-select" style="font-size:.75rem;">
-            <option value="none" ${b.float==='none'?'selected':''}>Sin flotado (bloque)</option>
-            <option value="left" ${b.float==='left'?'selected':''}>Flotado izquierda</option>
-            <option value="right" ${b.float==='right'?'selected':''}>Flotado derecha</option>
-          </select>
-          <select onchange="editorBlocks[${i}].width=this.value;renderEditorBlocks()" class="filter-select" style="font-size:.75rem;">
-            <option value="100px" ${b.width==='100px'?'selected':''}>Pequeña (100px)</option>
-            <option value="200px" ${b.width==='200px'?'selected':''}>Mediana (200px)</option>
-            <option value="300px" ${b.width==='300px'?'selected':''}>Grande (300px)</option>
-            <option value="100%" ${b.width==='100%'?'selected':''}>Ancho completo</option>
-          </select>
-        </div>`;
-    } else if (b.type==='banner') {
-      previewHtml = b.url
-        ? `<div style="width:100%;height:${b.height||'220px'};border-radius:10px;overflow:hidden;position:relative;background:#111;">
-             <img src="${b.url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"/>
-             ${b.text?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);"><span style="color:#fff;font-family:Fraunces,serif;font-size:1.4rem;font-weight:800;text-align:${b.textAlign||'center'};">${b.text}</span></div>`:''}
-           </div>`
-        : '<div style="width:100%;height:120px;background:var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--muted);"><i class="fas fa-panorama"></i> Banner completo</div>';
-      editHtml = `
-        <input class="filter-select" value="${b.url}" onchange="editorBlocks[${i}].url=this.value;renderEditorBlocks()" placeholder="URL de la imagen banner" style="width:100%;margin-bottom:6px;"/>
-        <input class="filter-select" value="${b.text||''}" onchange="editorBlocks[${i}].text=this.value;renderEditorBlocks()" placeholder="Texto sobre el banner (opcional)" style="width:100%;margin-bottom:6px;"/>
-        <select onchange="editorBlocks[${i}].height=this.value;renderEditorBlocks()" class="filter-select" style="font-size:.75rem;">
-          <option value="150px" ${b.height==='150px'?'selected':''}>Bajo (150px)</option>
-          <option value="220px" ${b.height==='220px'?'selected':''}>Normal (220px)</option>
-          <option value="320px" ${b.height==='320px'?'selected':''}>Alto (320px)</option>
-          <option value="420px" ${b.height==='420px'?'selected':''}>Muy alto (420px)</option>
-        </select>`;
-    } else if (b.type==='carousel') {
-      const items = b.items||[];
-      previewHtml = items.length
-        ? `<div style="width:100%;height:${b.height||'220px'};border-radius:10px;overflow:hidden;position:relative;">
-             <img src="${items[0]}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"/>
-             <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);display:flex;gap:4px;">${items.map((_,j)=>`<div style="width:6px;height:6px;border-radius:50%;background:${j===0?'#fff':'rgba(255,255,255,.4)'};"></div>`).join('')}</div>
-           </div>`
-        : '<div style="width:100%;height:120px;background:var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--muted);"><i class="fas fa-images"></i> Carrusel (sin imágenes)</div>';
-      editHtml = `
-        <div id="carousel-items-${i}" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">
-          ${items.map((url,j)=>`<div style="display:flex;gap:6px;"><input class="filter-select" value="${url}" onchange="editorBlocks[${i}].items[${j}]=this.value;renderEditorBlocks()" style="flex:1;" placeholder="URL imagen"/><button class="action-btn del" onclick="editorBlocks[${i}].items.splice(${j},1);renderEditorBlocks()" style="padding:4px 8px;"><i class="fas fa-trash"></i></button></div>`).join('')}
-        </div>
-        <button class="action-btn" onclick="editorBlocks[${i}].items.push('');renderEditorBlocks()" style="border-color:rgba(52,211,153,.3);color:var(--green);padding:6px 12px;font-size:.78rem;"><i class="fas fa-plus"></i> Añadir imagen</button>`;
-    }
-
-    return `<div class="editor-block" draggable="true"
-      ondragstart="editorDragIdx=${i}"
-      ondragover="event.preventDefault()"
-      ondrop="moveEditorBlock(editorDragIdx,${i}-editorDragIdx>0?1:-1);editorDragIdx=null"
-      style="display:flex;gap:12px;align-items:flex-start;">
-      <!-- Drag handle + order -->
-      <div style="display:flex;flex-direction:column;align-items:center;gap:3px;padding-top:4px;flex-shrink:0;">
-        <i class="fas fa-grip-vertical" style="color:var(--muted2);font-size:.8rem;cursor:grab;"></i>
-        <button class="editor-block-btn" onclick="moveEditorBlock(${i},-1)" ${i===0?'disabled':''}><i class="fas fa-chevron-up"></i></button>
-        <button class="editor-block-btn" onclick="moveEditorBlock(${i},1)" ${i===editorBlocks.length-1?'disabled':''}><i class="fas fa-chevron-down"></i></button>
-      </div>
-      <!-- Preview -->
-      <div style="flex:1;min-width:0;">
-        <div style="margin-bottom:8px;overflow:hidden;">${previewHtml}</div>
-        <div style="border-top:1px solid var(--border);padding-top:8px;">${editHtml}</div>
-      </div>
-      <!-- Delete -->
-      <button class="editor-block-btn del" onclick="removeEditorBlock(${i})"><i class="fas fa-trash"></i></button>
-    </div>`;
-  }).join('');
-}
-
-// Render HOME dynamic sections to page
-function renderHomeDynamicSections() {
-  const el = document.getElementById('homeDynamicSections');
-  if (!el) return;
-  const visible = HOME_SECTIONS.filter(s=>s.visible && s.type !== 'hero' && s.type !== 'featured' && s.type !== 'banners' && s.type !== 'explore');
-  el.innerHTML = visible.map(sec => {
-    const titleHtml = sec.showTitle !== false && sec.displayTitle
-      ? `<h2 style="font-family:'Fraunces',serif;font-size:1.3rem;font-weight:800;color:var(--text);text-align:center;margin-bottom:18px;">${sec.displayTitle}</h2>`
-      : '';
-    const blocksHtml = (sec.blocks||[]).map(b => renderSectionBlock(b)).join('');
-    if (!titleHtml && !blocksHtml) return '';
-    return `<div style="margin:28px 0;" id="home-sec-${sec.id}">${titleHtml}${blocksHtml}</div>`;
-  }).join('');
-}
-
-function renderSectionBlock(b) {
-  if (!b) return '';
-  if (b.type==='text'||b.type==='title') {
-    return `<div style="text-align:${b.align||'center'};font-size:${b.fontSize||'1rem'};${b.bold?'font-weight:700;':''}${b.color?'color:'+b.color+';':'color:var(--muted);'}line-height:1.7;margin-bottom:12px;">${b.content||''}</div>`;
-  }
-  if (b.type==='image') {
-    return b.url ? `<div style="text-align:${b.float==='right'?'right':b.float==='left'?'left':'center'};margin-bottom:12px;"><img src="${b.url}" style="max-width:${b.width||'200px'};border-radius:10px;float:${b.float||'none'};${b.float&&b.float!=='none'?'margin:'+(b.float==='left'?'0 16px 8px 0':'0 0 8px 16px')+';':''}" onerror="this.style.display='none'"/></div>` : '';
-  }
-  if (b.type==='banner') {
-    return b.url ? `<div style="width:100%;height:${b.height||'220px'};border-radius:12px;overflow:hidden;position:relative;margin-bottom:12px;">
-      <img src="${b.url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"/>
-      ${b.text?`<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.35);"><span style="color:#fff;font-family:Fraunces,serif;font-size:1.4rem;font-weight:800;">${b.text}</span></div>`:''}
-    </div>` : '';
-  }
-  if (b.type==='carousel' && b.items?.length) {
-    return `<div style="width:100%;height:${b.height||'220px'};border-radius:12px;overflow:hidden;position:relative;margin-bottom:12px;">
-      <img src="${b.items[0]}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"/>
-    </div>`;
-  }
-  return '';
-}
-
-// Rename addHomeSectionModal -> addHomeSectionSimple
-function addHomeSectionSimple() {
-  const name = prompt('Nombre de la nueva sección:');
-  if (!name || !name.trim()) return;
-  HOME_SECTIONS.push({
-    id: 'hs'+Date.now(),
-    type: 'custom',
-    title: name.trim(),
-    displayTitle: name.trim(),
-    showTitle: true,
-    visible: true,
-    locked: false,
-    blocks: [],
-  });
-  renderHomeSectionsList();
-  showToast('Sección agregada. Usá las flechas para ordenarla y presioná "Aplicar cambios".','success');
-}
-
-function applyHomeSections() {
-  renderHomeDynamicSections();
-  saveHomeSectionsToStorage();
-  showToast('Secciones aplicadas al inicio ✓ (guardado localmente)','success');
-}
-
-// ═══════════════════════ USER FILTERS ═══════════════════════
-function populateUserCatFilters() {
-  ['usersFilterCat','superUsersFilterCat'].forEach(id => {
-    const sel = document.getElementById(id);
-    if (!sel) return;
-    const current = sel.value;
-    sel.innerHTML = '<option value="">Todas las categorías</option>';
-    CATEGORIES.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.key; opt.textContent = c.name;
-      sel.appendChild(opt);
-    });
-    sel.value = current;
-  });
 }
 
 // ═══════════════════════ SUBCATEGORIES ═══════════════════════
@@ -2922,7 +2327,7 @@ function renderAllCatsPage() {
         </div>
         <div style="flex:1;min-width:0;">
           <div style="font-family:'Fraunces',serif;font-size:.78rem;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cat.name}</div>
-
+          <div style="font-size:.65rem;color:var(--muted);">${count} curso${count!==1?'s':''}</div>
         </div>
         ${hasSubcats ? `<i class="fas fa-chevron-down" style="color:var(--muted);font-size:.6rem;transition:transform .2s;" id="subchev-${cat.key}"></i>` : ''}
       </button>
@@ -2976,12 +2381,7 @@ async function renderSuperUsers() {
   if (!el) return;
   el.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted);"><i class="fas fa-spinner fa-spin"></i></td></tr>';
   try {
-    let users = await apiFetch(API.users);
-    // Apply filters
-    const roleF   = document.getElementById('superUsersFilterRole')?.value || '';
-    const searchF = document.getElementById('superUsersFilterSearch')?.value.toLowerCase() || '';
-    if (roleF)   users = users.filter(u => u.role === roleF);
-    if (searchF) users = users.filter(u => (u.username||'').toLowerCase().includes(searchF) || (u.email||'').toLowerCase().includes(searchF));
+    const users = await apiFetch(API.users);
     el.innerHTML = users.map(u => {
       const rc = ROLE_CONFIG[u.role] || ROLE_CONFIG.cliente;
       return `<tr>
@@ -3157,25 +2557,6 @@ function loginWithGoogle() {
 
 // ═══════════════════════ FOOTER RENDER ═══════════════════════
 function renderFooter() {
-  // Apply left column alignment
-  const leftCol = document.getElementById('footerLeftCol');
-  if (leftCol) {
-    const la = SITE_CONFIG.footerLeftAlign || 'left';
-    leftCol.style.textAlign = la;
-    leftCol.style.alignItems = la==='center'?'center':la==='right'?'flex-end':'flex-start';
-  }
-  const centerCol = document.getElementById('footerCenterCol');
-  if (centerCol) {
-    const ca = SITE_CONFIG.footerCenterAlign || 'center';
-    centerCol.style.textAlign = ca;
-    centerCol.style.alignItems = ca==='center'?'center':ca==='right'?'flex-end':'flex-start';
-  }
-  const rightCol = document.getElementById('footerRightCol');
-  if (rightCol) {
-    const ra = SITE_CONFIG.footerRightAlign || 'right';
-    rightCol.style.textAlign = ra;
-    rightCol.style.alignItems = ra==='center'?'center':ra==='right'?'flex-end':'flex-start';
-  }
   const socialEl = document.getElementById('footerSocialLinks');
   if (socialEl) {
     socialEl.innerHTML = (SITE_CONFIG.footerSocialLinks||[]).map(s=>`
@@ -3208,12 +2589,6 @@ function loadFooterForm() {
   if (center) center.value = SITE_CONFIG.footerCenterText || '';
   const right = document.getElementById('footerCfgRight');
   if (right) right.value = SITE_CONFIG.footerRightText || '';
-  const fla = document.getElementById('footerCfgLeftAlign');
-  if (fla) fla.value = SITE_CONFIG.footerLeftAlign || 'left';
-  const fca = document.getElementById('footerCfgCenterAlign');
-  if (fca) fca.value = SITE_CONFIG.footerCenterAlign || 'center';
-  const fra = document.getElementById('footerCfgRightAlign');
-  if (fra) fra.value = SITE_CONFIG.footerRightAlign || 'right';
   renderFooterSocialAdmin();
 }
 
@@ -3259,20 +2634,16 @@ function applyFooterConfig() {
   const center   = document.getElementById('footerCfgCenter')?.value || '';
   const right    = document.getElementById('footerCfgRight')?.value || '';
   const behavior = document.getElementById('footerCfgBehavior')?.value || 'scroll';
-  SITE_CONFIG.footerBg          = bg;
-  SITE_CONFIG.footerCountry     = country;
-  SITE_CONFIG.footerCenterText  = center;
-  SITE_CONFIG.footerRightText   = right;
-  SITE_CONFIG.footerBehavior    = behavior;
-  SITE_CONFIG.footerLeftAlign   = document.getElementById('footerCfgLeftAlign')?.value   || 'left';
-  SITE_CONFIG.footerCenterAlign = document.getElementById('footerCfgCenterAlign')?.value || 'center';
-  SITE_CONFIG.footerRightAlign  = document.getElementById('footerCfgRightAlign')?.value  || 'right';
+  SITE_CONFIG.footerBg       = bg;
+  SITE_CONFIG.footerCountry  = country;
+  SITE_CONFIG.footerCenterText = center;
+  SITE_CONFIG.footerRightText  = right;
+  SITE_CONFIG.footerBehavior   = behavior;
   const footerEl = document.getElementById('siteFooter');
   if (footerEl) footerEl.style.background = bg;
   applyFooterBehavior(behavior);
   renderFooter();
-  saveConfigToStorage();
-  showToast('Footer actualizado ✓ (guardado localmente)','success');
+  showToast('Footer actualizado ✓','success');
 }
 
 // ═══════════════════════ HOME SECTIONS CONFIG ═══════════════════════
@@ -3325,15 +2696,11 @@ function moveHomeSection(i, dir) {
   if (j<0||j>=HOME_SECTIONS.length) return;
   [HOME_SECTIONS[i],HOME_SECTIONS[j]] = [HOME_SECTIONS[j],HOME_SECTIONS[i]];
   renderHomeSectionsList();
-  // Also save - user still needs to press Aplicar to see on page
-  saveHomeSectionsToStorage();
 }
 
 function toggleHomeSection(i) {
   HOME_SECTIONS[i].visible = !HOME_SECTIONS[i].visible;
   renderHomeSectionsList();
-  saveHomeSectionsToStorage();
-  renderHomeDynamicSections();
   showToast(HOME_SECTIONS[i].visible?'Sección visible':'Sección ocultada','success');
 }
 
@@ -3382,14 +2749,7 @@ async function renderAdminUsers() {
   if (!el) return;
   el.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>';
   try {
-    let users = await apiFetch(API.users);
-    // Apply filters
-    const roleF   = document.getElementById('usersFilterRole')?.value || '';
-    const catF    = document.getElementById('usersFilterCat')?.value || '';
-    const searchF = document.getElementById('usersFilterSearch')?.value.toLowerCase() || '';
-    if (roleF)   users = users.filter(u => u.role === roleF);
-    if (searchF) users = users.filter(u => (u.username||'').toLowerCase().includes(searchF) || (u.email||'').toLowerCase().includes(searchF));
-    // catF filter would require purchase data - for now just filter by role
+    const users = await apiFetch(API.users);
     const cnt = document.getElementById('adminUserCount');
     if (cnt) cnt.textContent = `(${users.length})`;
     el.innerHTML = users.length ? users.map(u => {
@@ -3497,7 +2857,10 @@ function loadConfigForm() {
   if (sm) sm.value = SITE_CONFIG.sidebarMode;
   const sp = document.getElementById('cfgSidebarPos');
   if (sp) sp.value = SITE_CONFIG.sidebarPosition;
-  // cfgFooterFixed and cfgFooterContent moved to Gestionar Footer
+  const ft = document.getElementById('cfgFooterFixed');
+  if (ft) ft.checked = SITE_CONFIG.footerFixed;
+  const fc = document.getElementById('cfgFooterContent');
+  if (fc) fc.value = SITE_CONFIG.footerContent;
   const nt = document.getElementById('cfgNavTransparent');
   if (nt) nt.checked = SITE_CONFIG.navbarTransparent;
   const sp2 = document.getElementById('cfgSearchPos');
@@ -3512,10 +2875,6 @@ function loadConfigForm() {
 function renderNavBtnsConfig() {
   const el = document.getElementById('navBtnsConfig');
   if (!el) return;
-  if (!SITE_CONFIG.navButtons || !SITE_CONFIG.navButtons.length) {
-    el.innerHTML = '<p style="color:var(--muted);font-size:.8rem;">No hay botones configurados.</p>';
-    return;
-  }
   el.innerHTML = SITE_CONFIG.navButtons.map((b, i) => `
     <div style="display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;">
       <div style="display:flex;flex-direction:column;gap:2px;">
@@ -3560,11 +2919,14 @@ function applyConfig() {
   const appName = document.getElementById('cfgAppName').value.trim() || 'DiartixAcademy';
   const primary = document.getElementById('cfgPrimary').value;
   const accent  = document.getElementById('cfgAccent').value;
-  const sidebarMode    = document.getElementById('cfgSidebarMode')?.value || 'fixed';
-  const navTransparent = document.getElementById('cfgNavTransparent')?.checked || false;
+  const sidebarMode = document.getElementById('cfgSidebarMode').value;
+  const sidebarPos  = document.getElementById('cfgSidebarPos').value;
+  const footerFixed = document.getElementById('cfgFooterFixed').checked;
+  const footerContent = document.getElementById('cfgFooterContent').value;
+  const navTransparent = document.getElementById('cfgNavTransparent').checked;
 
   SITE_CONFIG = {...SITE_CONFIG, appName, primaryColor:primary, accentColor:accent,
-    sidebarMode, navbarTransparent:navTransparent};
+    sidebarMode, sidebarPosition:sidebarPos, footerFixed, footerContent, navbarTransparent:navTransparent};
 
   // Apply colors via CSS variables
   document.documentElement.style.setProperty('--primary', primary);
@@ -3575,30 +2937,11 @@ function applyConfig() {
   // e.g. "DiartixAcademy" → "Diartix" + "Academy"
   // "MiEscuela" → "Mi" + "Escuela"
   // "Academia" → "Academi" + "a" (single word fallback)
-  // Split CamelCase at last capital word: "DiartixAcademy" → ["Diartix","Academy"]
-  // "MiEscuela" → ["Mi","Escuela"]  |  "Academia" → ["Academi","a"] (single word fallback)
-  let primaryPart, accentPart;
-  const camelMatch = appName.match(/^(.*[a-z])([A-Z][a-z]*)$/);
-  if (camelMatch) {
-    primaryPart = camelMatch[1];
-    accentPart  = camelMatch[2];
-  } else if (appName.includes(' ')) {
-    // "Mi Academia" → "Mi " + "Academia"
-    const parts = appName.split(' ');
-    accentPart  = parts.pop();
-    primaryPart = parts.join(' ') + ' ';
-  } else {
-    // Single word — split last 3 chars
-    primaryPart = appName.slice(0, -3) || appName;
-    accentPart  = appName.slice(-3);
-  }
+  const splitMatch = appName.match(/^(.*?)([A-Z][a-z]*)$/);
+  const primaryPart = splitMatch ? splitMatch[1] || appName.slice(0,-1) : appName;
+  const accentPart  = splitMatch ? splitMatch[2] : appName.slice(-1);
   document.querySelectorAll('.app-name-primary').forEach(el => { el.textContent = primaryPart; });
   document.querySelectorAll('.app-name-accent').forEach(el  => { el.textContent = accentPart; });
-  // Also update page title
-  document.title = appName + ' — Cursos Online';
-  // Update sidebar logo text
-  const logoText = document.querySelector('.sb-logo-text');
-  if (logoText) logoText.textContent = appName;
 
   // Apply navbar transparency
   const topbar = document.querySelector('.topbar');
@@ -3608,8 +2951,7 @@ function applyConfig() {
   }
 
   // Apply sidebar mode
-  applySidebarMode(sidebarMode);
-  renderSidebar();
+  applySidebarMode(sidebarMode, sidebarPos);
 
   // Apply footer
   // footerFixed is now handled by footerBehavior dropdown above
@@ -3641,34 +2983,33 @@ function applyConfig() {
   // Apply nav buttons
   renderTopbarNav();
   renderNavCatDropdown();
-  saveConfigToStorage();
-  showToast('Configuración aplicada ✓ (guardado localmente)', 'success');
+
+  showToast('Configuración aplicada ✓', 'success');
 }
 
-function applySidebarMode(mode) {
+function applySidebarMode(mode, pos) {
   const sidebar = document.querySelector('.sidebar');
+  const cw = document.querySelector('.content-wrapper');
   if (!sidebar) return;
-  sidebar.classList.remove('mini', 'hidden-sb');
+  // Position
+  cw?.classList.toggle('sb-right', pos === 'right');
+  // Mode
+  sidebar.classList.remove('mini','hidden-sb');
   if (mode === 'mini')   sidebar.classList.add('mini');
   if (mode === 'hidden') sidebar.classList.add('hidden-sb');
   SITE_CONFIG.sidebarMode = mode;
-  SITE_CONFIG.sidebarPosition = 'left';
-  // NOTE: does NOT auto-save. Saving is done explicitly by applyConfig / resetVisualConfig.
+  SITE_CONFIG.sidebarPosition = pos || SITE_CONFIG.sidebarPosition;
 }
 
 function toggleSidebar() {
-  // Cycles: fixed → mini → fixed
   const sidebar = document.querySelector('.sidebar');
   if (!sidebar) return;
-  if (sidebar.classList.contains('mini')) {
-    // Mini → Fixed
-    applySidebarMode('fixed');
-  } else if (sidebar.classList.contains('hidden-sb')) {
-    // Hidden → Fixed
-    applySidebarMode('fixed');
+  if (sidebar.classList.contains('hidden-sb')) {
+    sidebar.classList.remove('hidden-sb');
+    if (SITE_CONFIG.sidebarMode === 'hidden') SITE_CONFIG.sidebarMode = 'fixed';
   } else {
-    // Fixed → Mini
-    applySidebarMode('mini');
+    sidebar.classList.add('hidden-sb');
+    SITE_CONFIG.sidebarMode = 'hidden';
   }
 }
 
@@ -3806,8 +3147,6 @@ function showAdminInicio() {
   currentSection = 'admin-inicio';
   document.querySelectorAll('.page-sec').forEach(s=>s.classList.remove('active'));
   document.getElementById('sec-admin-inicio').classList.add('active');
-  // Render ordered sections in panel
-  renderAdminInicioSections();
   // Load current values
   const videoIn = document.getElementById('videoUrlInput');
   if (videoIn) videoIn.value = videoUrl || '';
@@ -3823,22 +3162,6 @@ function showAdminInicio() {
   if (motivTitleIn) motivTitleIn.value = document.getElementById('homeMotivTitle')?.textContent || '';
   renderHeroStatsList();
   renderSidebar();
-}
-
-function renderAdminInicioSections() {
-  const el = document.getElementById('adminInicioSectionsList');
-  if (!el) return;
-  const sections = HOME_SECTIONS.filter(s=>s.visible);
-  el.innerHTML = sections.map((sec,i) => `
-    <div style="display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;">
-      <div style="flex:1;">
-        <div style="font-family:'Fraunces',serif;font-size:.85rem;font-weight:700;color:var(--text);">${sec.title}</div>
-        <div style="font-size:.68rem;color:var(--muted);">${(sec.blocks||[]).length} bloque${(sec.blocks||[]).length!==1?'s':''}</div>
-      </div>
-      <button class="action-btn" onclick="openSectionEditor('${sec.id}','${sec.title}')" style="border-color:rgba(62,166,255,.3);color:var(--primary);padding:7px 14px;">
-        <i class="fas fa-pen"></i> Modificar sección
-      </button>
-    </div>`).join('');
 }
 
 function toggleHeaderType() {
@@ -4119,201 +3442,6 @@ function deleteCampaign(id) {
   showToast('Campaña eliminada','success');
 }
 
-// ═══════════════════════ PROFILE MODAL ═══════════════════════
-function openProfileModal() {
-  const dn = document.getElementById('profileDisplayName');
-  if (dn) dn.textContent = currentUser.username || currentUser.email || '';
-  const emailIn = document.getElementById('profileEmail');
-  if (emailIn) emailIn.value = currentUser.email || '';
-  openModal('profileModal');
-}
-
-async function saveProfileChanges() {
-  const newPass     = document.getElementById('profileNewPass').value;
-  const currentPass = document.getElementById('profileCurrentPass').value;
-  const newEmail    = document.getElementById('profileEmail').value.trim();
-
-  if (newPass) {
-    if (!currentPass) { showToast('Ingresá tu contraseña actual','error'); return; }
-    if (newPass.length < 6) { showToast('La nueva contraseña debe tener al menos 6 caracteres','error'); return; }
-    try {
-      await apiFetch('/api/auth/change-password/', {
-        method:'POST',
-        body: JSON.stringify({current_password: currentPass, new_password: newPass})
-      });
-      showToast('Contraseña actualizada ✓','success');
-      document.getElementById('profileCurrentPass').value = '';
-      document.getElementById('profileNewPass').value = '';
-    } catch(e) { showToast('Error: contraseña actual incorrecta','error'); return; }
-  }
-
-  if (newEmail && newEmail !== currentUser.email) {
-    try {
-      await apiFetch('/api/auth/change-email/', {
-        method:'POST',
-        body: JSON.stringify({email: newEmail})
-      });
-      currentUser.email = newEmail;
-      showToast('Email actualizado ✓','success');
-    } catch(e) { showToast('Error al actualizar email','error'); return; }
-  }
-
-  renderTopbarAuth();
-  closeModal('profileModal');
-}
-
-// ═══════════════════════ ABOUT SECTION ═══════════════════════
-function showAbout() {
-  currentSection = 'about';
-  document.querySelectorAll('.page-sec').forEach(s=>s.classList.remove('active'));
-  const sec = document.getElementById('sec-about');
-  if (sec) { sec.classList.add('active'); renderAboutPage(); }
-  renderSidebar();
-}
-
-function renderAboutPage() {
-  const el = document.getElementById('aboutPageContent');
-  if (!el) return;
-  const a = SITE_CONFIG.aboutContent;
-  const imgHtml = a.showImage && a.imageUrl
-    ? `<img src="${a.imageUrl}" style="width:200px;height:200px;object-fit:cover;border-radius:14px;flex-shrink:0;" onerror="this.style.display='none'"/>`
-    : '';
-  el.innerHTML = `
-    <div style="display:flex;align-items:flex-start;gap:24px;flex-wrap:wrap;justify-content:${a.align==='center'?'center':'flex-start'};">
-      ${a.imagePos==='left' ? imgHtml : ''}
-      <div style="flex:1;min-width:220px;text-align:${a.align||'center'};">
-        <h2 style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:800;color:var(--primary);margin-bottom:16px;">${a.title}</h2>
-        <p style="font-size:${a.fontSize||'1rem'};line-height:1.8;color:var(--muted);${a.bold?'font-weight:700;':''}">${a.text}</p>
-      </div>
-      ${a.imagePos==='right' ? imgHtml : ''}
-    </div>`;
-}
-
-function showAdminAbout() {
-  currentSection = 'admin-about';
-  document.querySelectorAll('.page-sec').forEach(s=>s.classList.remove('active'));
-  const sec = document.getElementById('sec-admin-about');
-  if (sec) { sec.classList.add('active'); loadAboutForm(); }
-  renderSidebar();
-}
-
-function loadAboutForm() {
-  const a = SITE_CONFIG.aboutContent;
-  const fields = {
-    aboutCfgTitle: a.title, aboutCfgText: a.text,
-    aboutCfgFontSize: a.fontSize||'1rem', aboutCfgImageUrl: a.imageUrl||'',
-  };
-  Object.entries(fields).forEach(([id,val])=>{
-    const el = document.getElementById(id); if(el) el.value=val;
-  });
-  const align = document.getElementById('aboutCfgAlign');
-  if (align) align.value = a.align||'center';
-  const imgPos = document.getElementById('aboutCfgImgPos');
-  if (imgPos) imgPos.value = a.imagePos||'left';
-  const bold = document.getElementById('aboutCfgBold');
-  if (bold) bold.checked = a.bold||false;
-  const showImg = document.getElementById('aboutCfgShowImg');
-  if (showImg) showImg.checked = a.showImage||false;
-}
-
-function applyAboutConfig() {
-  SITE_CONFIG.aboutContent = {
-    title:     document.getElementById('aboutCfgTitle')?.value.trim() || 'Acerca de Nosotros',
-    text:      document.getElementById('aboutCfgText')?.value.trim() || '',
-    align:     document.getElementById('aboutCfgAlign')?.value || 'center',
-    fontSize:  document.getElementById('aboutCfgFontSize')?.value || '1rem',
-    bold:      document.getElementById('aboutCfgBold')?.checked || false,
-    imageUrl:  document.getElementById('aboutCfgImageUrl')?.value.trim() || '',
-    imagePos:  document.getElementById('aboutCfgImgPos')?.value || 'left',
-    showImage: document.getElementById('aboutCfgShowImg')?.checked || false,
-  };
-  renderAboutPage();
-  showToast('Acerca de nosotros actualizado ✓','success');
-}
-
-// ═══════════════════════ EXTERNAL LINKS ═══════════════════════
-function showAdminLinks() {
-  currentSection = 'admin-links';
-  document.querySelectorAll('.page-sec').forEach(s=>s.classList.remove('active'));
-  const sec = document.getElementById('sec-admin-links');
-  if (sec) { sec.classList.add('active'); renderLinksList(); }
-  renderSidebar();
-}
-
-function renderLinksList() {
-  const el = document.getElementById('extLinksList');
-  if (!el) return;
-  const links = SITE_CONFIG.externalLinks || [];
-  el.innerHTML = links.length ? links.map((link,i)=>`
-    <div style="display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;${link.hidden?'opacity:.5;':''}">
-      <i class="fas ${link.icon||'fa-external-link-alt'}" style="color:#a78bfa;font-size:1rem;width:20px;text-align:center;flex-shrink:0;"></i>
-      <div style="flex:1;">
-        <div style="font-weight:700;font-size:.85rem;">${link.name}</div>
-        <div style="font-size:.7rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:250px;">${link.url}</div>
-      </div>
-      ${link.hidden?'<span style="font-size:.65rem;color:var(--gold);font-weight:700;">OCULTO</span>':''}
-      <div style="display:flex;gap:6px;">
-        <button class="action-btn" onclick="editExtLink(${i})"><i class="fas fa-edit"></i></button>
-        <button class="action-btn hide-btn ${link.hidden?'hidden-active':''}" onclick="toggleExtLink(${i})">
-          <i class="fas ${link.hidden?'fa-eye':'fa-eye-slash'}"></i>
-        </button>
-        <button class="action-btn del" onclick="deleteExtLink(${i})"><i class="fas fa-trash"></i></button>
-      </div>
-    </div>`).join('')
-  : '<p style="color:var(--muted);font-size:.85rem;">No hay enlaces agregados aún.</p>';
-}
-
-function openAddLinkModal() {
-  document.getElementById('linkModalTitle').textContent = 'Agregar Enlace';
-  document.getElementById('editLinkIdx').value = '';
-  document.getElementById('linkName').value = '';
-  document.getElementById('linkUrl').value = '';
-  document.getElementById('linkIcon').value = 'fa-external-link-alt';
-  openModal('extLinkModal');
-}
-
-function editExtLink(i) {
-  const link = SITE_CONFIG.externalLinks[i];
-  document.getElementById('linkModalTitle').textContent = 'Editar Enlace';
-  document.getElementById('editLinkIdx').value = i;
-  document.getElementById('linkName').value = link.name;
-  document.getElementById('linkUrl').value = link.url;
-  document.getElementById('linkIcon').value = link.icon || 'fa-external-link-alt';
-  openModal('extLinkModal');
-}
-
-function saveExtLink() {
-  const name = document.getElementById('linkName').value.trim();
-  const url  = document.getElementById('linkUrl').value.trim();
-  const icon = document.getElementById('linkIcon').value.trim() || 'fa-external-link-alt';
-  if (!name || !url) { showToast('Nombre y URL son obligatorios','error'); return; }
-  const idx = document.getElementById('editLinkIdx').value;
-  if (!SITE_CONFIG.externalLinks) SITE_CONFIG.externalLinks = [];
-  if (idx !== '') {
-    SITE_CONFIG.externalLinks[parseInt(idx)] = {...SITE_CONFIG.externalLinks[parseInt(idx)], name, url, icon};
-  } else {
-    SITE_CONFIG.externalLinks.push({name, url, icon, hidden: false});
-  }
-  closeModal('extLinkModal');
-  renderLinksList();
-  renderSidebar();
-  showToast('Enlace guardado ✓','success');
-}
-
-function toggleExtLink(i) {
-  SITE_CONFIG.externalLinks[i].hidden = !SITE_CONFIG.externalLinks[i].hidden;
-  renderLinksList();
-  renderSidebar();
-}
-
-function deleteExtLink(i) {
-  if (!confirm('¿Eliminar este enlace?')) return;
-  SITE_CONFIG.externalLinks.splice(i, 1);
-  renderLinksList();
-  renderSidebar();
-  showToast('Enlace eliminado','success');
-}
-
 // Utils
 function openModal(id){ document.getElementById(id).classList.add('open'); }
 function closeModal(id){ document.getElementById(id).classList.remove('open'); }
@@ -4335,55 +3463,6 @@ function showToast(msg,type='success') {
 // Inicializar
 init();
 </script>
-
-<!-- ═══ SECTION EDITOR OVERLAY ═══ -->
-<div class="section-editor-overlay" id="sectionEditorOverlay">
-  <div class="section-editor-header">
-    <div style="flex:1;">
-      <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:800;color:var(--primary);" id="sectionEditorTitle">Editor de Sección</div>
-      <div style="font-size:.72rem;color:var(--muted);margin-top:2px;">Arrastrá los bloques para reordenarlos</div>
-    </div>
-    <label style="display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted);cursor:pointer;">
-      <input type="checkbox" id="sectionEditorShowTitle" style="accent-color:var(--primary);"/>
-      Mostrar título de sección
-    </label>
-    <input class="form-input" id="sectionEditorTitleText" placeholder="Título de la sección" style="width:200px;margin-left:8px;"/>
-    <button class="btn-primary" style="background:linear-gradient(135deg,#059669,#34d399);margin-left:12px;" onclick="saveSectionEditor()">
-      <i class="fas fa-check"></i> Guardar cambios
-    </button>
-    <button class="btn-ghost" onclick="closeSectionEditor()" style="margin-left:8px;">Cancelar</button>
-  </div>
-
-  <!-- Preview area -->
-  <div class="section-editor-canvas">
-    <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:10px;">Vista previa</div>
-    <div class="section-editor-preview" id="sectionEditorPreview">
-      <div id="sectionEditorBlocks" style="display:flex;flex-direction:column;gap:12px;min-height:80px;"></div>
-    </div>
-  </div>
-
-  <!-- Toolbar -->
-  <div class="section-editor-tools">
-    <span style="font-size:.75rem;color:var(--muted);font-weight:600;">Agregar:</span>
-    <button class="action-btn" onclick="addEditorBlock('text')" style="border-color:rgba(62,166,255,.3);color:var(--primary);padding:7px 14px;">
-      <i class="fas fa-font"></i> Texto
-    </button>
-    <button class="action-btn" onclick="addEditorBlock('image')" style="border-color:rgba(167,139,250,.3);color:#a78bfa;padding:7px 14px;">
-      <i class="fas fa-image"></i> Imagen
-    </button>
-    <button class="action-btn" onclick="addEditorBlock('banner')" style="border-color:rgba(255,140,66,.3);color:var(--accent);padding:7px 14px;">
-      <i class="fas fa-panorama"></i> Banner completo
-    </button>
-    <button class="action-btn" onclick="addEditorBlock('carousel')" style="border-color:rgba(52,211,153,.3);color:var(--green);padding:7px 14px;">
-      <i class="fas fa-images"></i> Carrusel
-    </button>
-    <button class="action-btn" onclick="addEditorBlock('title')" style="padding:7px 14px;">
-      <i class="fas fa-heading"></i> Título
-    </button>
-    <div style="height:24px;width:1px;background:var(--border);margin:0 4px;"></div>
-    <span style="font-size:.72rem;color:var(--muted2);">Arrastrá los bloques para reordenarlos</span>
-  </div>
-</div>
 
 {% block extra_scripts %}{% endblock %}
 

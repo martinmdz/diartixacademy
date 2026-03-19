@@ -145,6 +145,10 @@ body.dark-mode .sb-btn:hover{background:rgba(255,255,255,.03);}
 /* Native title tooltips show on hover automatically - enhanced via CSS */
 .action-btn[title]:hover::after{content:attr(title);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:rgba(10,13,26,.92);color:#fff;font-size:.65rem;white-space:nowrap;padding:4px 8px;border-radius:6px;pointer-events:none;z-index:9999;font-family:'Plus Jakarta Sans',sans-serif;font-weight:500;}
 .action-btn[title]:hover::before{content:'';position:absolute;bottom:calc(100% + 1px);left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:rgba(10,13,26,.92);pointer-events:none;z-index:9999;}
+/* ══ ADMIN FILTERS BAR ══ */
+.admin-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+.admin-filters .filter-search{flex:2;min-width:180px;background:var(--panel);border:1px solid var(--border2);border-radius:10px;padding:8px 12px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:.82rem;outline:none;}
+.admin-filters .filter-search:focus{border-color:var(--primary);}
 /* ══ FILTER SELECTS ══ */
 .filter-select{background:var(--panel2);border:1px solid var(--border2);border-radius:8px;padding:7px 12px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:.82rem;outline:none;transition:border-color .2s;}
 .filter-select:focus{border-color:var(--primary);}
@@ -1025,11 +1029,37 @@ let allCoursesFiltered = [];
 let adminCoursesPage = 1;
 const ADMIN_COURSES_PER_PAGE = 30;
 let adminCoursesSort = {col:'title', dir:'asc'};
+function _adminSortBy(c) {
+  if (adminCoursesSort.col===c) adminCoursesSort.dir = adminCoursesSort.dir==='asc'?'desc':'asc';
+  else adminCoursesSort = {col:c, dir:'asc'};
+  renderAdminTable();
+}
 let adminLinkStatus = {}; // id -> 'ok'|'broken'|'checking'
 // Admin users table state  
 let adminUsersPage = 1;
 const ADMIN_USERS_PER_PAGE = 40;
 let adminUsersSort = {col:'username', dir:'asc'};
+// Page backgrounds
+let PAGE_BG = {}; // {home:{}, courses:{id:{}}, cats:{key:{}}}
+let BG_TEMPLATES = []; // [{name, type, imgUrl, ...}]
+let _pageBgContext = null; // {ctx:'home'|'course'|'cat', id}
+
+function _loadPageBgFromStorage() {
+  try {
+    const d = localStorage.getItem(LS_PAGE_BG_KEY);
+    if (d) PAGE_BG = JSON.parse(d);
+  } catch(e) {}
+  try {
+    const d = localStorage.getItem(LS_BG_TEMPLATES_KEY);
+    if (d) BG_TEMPLATES = JSON.parse(d);
+  } catch(e) {}
+}
+function _savePageBgToStorage() {
+  try { localStorage.setItem(LS_PAGE_BG_KEY, JSON.stringify(PAGE_BG)); } catch(e) {}
+}
+function _saveBgTemplatesToStorage() {
+  try { localStorage.setItem(LS_BG_TEMPLATES_KEY, JSON.stringify(BG_TEMPLATES)); } catch(e) {}
+}
 let editingSocialId = null;
 
 // ═══════════════════════ THEME ═══════════════════════
@@ -1053,6 +1083,8 @@ document.addEventListener('click', function(e) {
 const LS_SITE_CONFIG_KEY   = 'diartix_site_config';
 const LS_HOME_SECTIONS_KEY = 'diartix_home_sections';
 const LS_COURSE_HOME_KEY   = 'diartix_course_home'; // featuredHome + masvendidoHome
+const LS_PAGE_BG_KEY       = 'diartix_page_bg';    // {home:{...}, courses:{id:{...}}, cats:{key:{...}}}
+const LS_BG_TEMPLATES_KEY  = 'diartix_bg_templates'; // [{name, ...bgConfig}]
 
 function resetVisualConfig() {
   if (!confirm('¿Resetear la configuración visual a los valores por defecto?')) return;
@@ -1219,6 +1251,10 @@ async function init() {
   // Apply footer behavior on load
   applyFooterBehavior(SITE_CONFIG.footerBehavior || 'scroll');
   _loadCourseHomeFromStorage(); // restore featuredHome/masvendidoHome
+  _loadPageBgFromStorage();
+  _loadUsefulLinks();
+  _loadRolePerms();
+  applyPageBackground('home');
   renderFeatured();
   renderHomeMasVendido();
   renderBannerSlider();
@@ -1462,8 +1498,9 @@ function renderSidebar() {
   const isMini = document.querySelector('.sidebar')?.classList.contains('mini');
 
   // Helper: build a sidebar button
-  const sbBtn = (section, icon, label, onclick, extraClass='', color='') =>
-    `<button class="sb-btn ${extraClass} ${currentSection===section?'active':''}" onclick="${onclick}">
+  const sbBtn = (section, icon, label, onclick, extraClass='', color='', bgTint='') =>
+    `<button class="sb-btn ${extraClass} ${currentSection===section?'active':''}" onclick="${onclick}"
+      ${bgTint?`style="background:${bgTint};"`:''}>
       <i class="fas ${icon} sb-icon"${color?` style="color:${color};"`:''} title="${label}"></i>
       <span class="sb-btn-text">${label}</span>
     </button>`;
@@ -1540,53 +1577,52 @@ function renderSidebar() {
     if (['admin','owner','superadmin'].includes(role)) {
       const adminColor = role==='superadmin'?'#e11d48':role==='owner'?'#7c3aed':'var(--accent)';
       const adminClass = role==='superadmin'?'super-btn':role==='owner'?'owner-btn':'gold-btn';
+  // ── Links + About + Contact (end of public items, before admin panels) ──
+  if (SITE_CONFIG.externalLinks && SITE_CONFIG.externalLinks.filter(l=>!l.hidden).length > 0) {
+    SITE_CONFIG.externalLinks.filter(l=>!l.hidden).forEach(link => {
+      html += `<button class="sb-btn ext-btn" onclick="window.open('${link.url}','_blank')" title="${link.name}">
+        <i class="fas ${link.icon||'fa-external-link-alt'} sb-icon" style="color:#a78bfa;"></i>
+        <span class="sb-btn-text">${link.name}</span>
+        <i class="fas fa-external-link-alt" style="font-size:.55rem;margin-left:auto;color:var(--muted2);"></i>
+      </button>`;
+    });
+  }
+  if (SITE_CONFIG.showAboutSidebar !== false) {
+    html += sbBtn('about','fa-info-circle','Acerca de Nosotros',"showSection('about')",'','var(--muted)');
+  }
+  if (SITE_CONFIG.showContactoSidebar !== false) {
+    html += sbBtn('contacto','fa-envelope','Contáctanos',"showSection('contacto');renderContactSection()",'','var(--primary)');
+  }
+  html += `<div style="flex:1;min-height:10px;"></div>`;
+
       html += `<div class="sb-label" style="color:${adminColor};opacity:.7;">Administración</div>`;
-      html += sbBtn('admin',        'fa-tachometer-alt','Panel Admin',       "showSection('admin')",        adminClass, adminColor);
-      html += sbBtn('admin-cursos', 'fa-graduation-cap','Gestionar Cursos',  "showAdminCursos()",           adminClass, adminColor);
-      html += sbBtn('admin-cats',   'fa-layer-group',  'Gestionar Categorías',"showAdminCats()",             adminClass, adminColor);
-      html += sbBtn('admin-banners','fa-images',       'Gestionar Banners',  "showAdminBanners()",          adminClass, adminColor);
-      html += sbBtn('admin-inicio', 'fa-home',         'Panel Inicio',       "showAdminInicio()",           adminClass, adminColor);
-      html += sbBtn('admin-contacto','fa-address-book','Gestionar Contacto', "showAdminContacto()",         adminClass, adminColor);
-      html += sbBtn('admin-users',  'fa-users',        'Usuarios',           "showAdminUsers()",            adminClass, adminColor);
-      html += sbBtn('admin-stats',  'fa-chart-bar',    'Estadísticas',       "showAdminStats()",            adminClass, adminColor);
+      const adminTint = role==='superadmin'?'rgba(225,29,72,.05)':role==='owner'?'rgba(124,58,237,.05)':'rgba(255,140,66,.05)';
+      const _canSee = (key) => role==='superadmin' ? true : (ROLE_SIDEBAR_PERMS[role]||DEFAULT_ROLE_PERMS[role]||[]).includes(key);
+      if(_canSee('admin'))         html += sbBtn('admin',        'fa-tachometer-alt','Panel Admin',       "showSection('admin')",        adminClass, adminColor, adminTint);
+      if(_canSee('admin-cursos'))  html += sbBtn('admin-cursos', 'fa-graduation-cap','Gestionar Cursos',  "showAdminCursos()",           adminClass, adminColor, adminTint);
+      if(_canSee('admin-cats'))    html += sbBtn('admin-cats',   'fa-layer-group',  'Gestionar Categorías',"showAdminCats()",             adminClass, adminColor, adminTint);
+      if(_canSee('admin-banners')) html += sbBtn('admin-banners','fa-images',       'Gestionar Banners',  "showAdminBanners()",          adminClass, adminColor, adminTint);
+      if(_canSee('admin-inicio'))  html += sbBtn('admin-inicio', 'fa-home',         'Panel Inicio',       "showAdminInicio()",           adminClass, adminColor, adminTint);
+      if(_canSee('admin-contacto'))html += sbBtn('admin-contacto','fa-address-book','Gestionar Contacto', "showAdminContacto()",         adminClass, adminColor, adminTint);
+      if(_canSee('admin-users'))   html += sbBtn('admin-users',  'fa-users',        'Usuarios',           "showAdminUsers()",            adminClass, adminColor, adminTint);
+      if(_canSee('admin-stats'))   html += sbBtn('admin-stats',  'fa-chart-bar',    'Estadísticas',       "showAdminStats()",            adminClass, adminColor, adminTint);
     }
 
     // ── SUPERADMIN exclusive items (red) ──
     if (role === 'superadmin') {
       html += `<div class="sb-label" style="color:#e11d48;opacity:.8;">⚡ Superadmin</div>`;
-      html += sbBtn('admin-logo',   'fa-image',        'Editar Logo',        "showAdminLogo()",             'super-btn','#e11d48');
-      html += sbBtn('admin-config',       'fa-cog',      'Configuración Visual',"showAdminConfig()",          'super-btn','#e11d48');
-      html += sbBtn('admin-inicio-super','fa-th-list',  'Gestión Secciones Inicio',      "showAdminInicioSuper()",     'super-btn','#e11d48');
-      html += sbBtn('admin-about',         'fa-info-circle',      'Gestionar Acerca de',"showAdminAbout()",           'super-btn','#e11d48');
-      html += sbBtn('admin-links',         'fa-external-link-alt','Agregar Links',      "showAdminLinks()",           'super-btn','#e11d48');
-      html += sbBtn('admin-footer',        'fa-layer-group',      'Gestionar Footer',   "showAdminFooter()",          'super-btn','#e11d48');
-      html += sbBtn('admin-emails',       'fa-envelope-open-text','Campañas Email',"showAdminEmails()",          'super-btn','#e11d48');
-      html += sbBtn('admin-roles',  'fa-id-badge',     'Gestión de Roles',   "showAdminRoles()",            'super-btn','#e11d48');
-      html += sbBtn('admin-superusers','fa-crown',     'Superusuarios',      "showAdminSuperUsers()",       'super-btn','#e11d48');
+      const superTint = 'rgba(225,29,72,.05)';
+      html += sbBtn('admin-logo',   'fa-image',        'Editar Logo',        "showAdminLogo()",             'super-btn','#e11d48', superTint);
+      html += sbBtn('admin-config',       'fa-cog',      'Configuración Visual',"showAdminConfig()",          'super-btn','#e11d48', superTint);
+      html += sbBtn('admin-inicio-super','fa-th-list',  'Gestión Secciones Inicio',      "showAdminInicioSuper()",     'super-btn','#e11d48', superTint);
+      html += sbBtn('admin-about',         'fa-info-circle',      'Gestionar Acerca de',"showAdminAbout()",           'super-btn','#e11d48', superTint);
+      html += sbBtn('admin-links',         'fa-external-link-alt','Agregar Links',      "showAdminLinks()",           'super-btn','#e11d48', superTint);
+      html += sbBtn('admin-footer',        'fa-layer-group',      'Gestionar Footer',   "showAdminFooter()",          'super-btn','#e11d48', superTint);
+      html += sbBtn('admin-emails',       'fa-envelope-open-text','Campañas Email',"showAdminEmails()",          'super-btn','#e11d48', superTint);
+      html += sbBtn('admin-roles',  'fa-id-badge',     'Gestión de Roles',   "showAdminRoles()",            'super-btn','#e11d48', superTint);
+      html += sbBtn('admin-superusers','fa-crown',     'Superusuarios',      "showAdminSuperUsers()",       'super-btn','#e11d48', superTint);
+      html += sbBtn('admin-useful-links','fa-bookmark','Links Útiles',       "showUsefulLinks()",           'super-btn','#e11d48', superTint);
     }
-  }
-
-  html += `<div style="flex:1;min-height:16px;"></div>`;
-
-  // External links
-  if (SITE_CONFIG.externalLinks && SITE_CONFIG.externalLinks.filter(l=>!l.hidden).length > 0) {
-    SITE_CONFIG.externalLinks.filter(l=>!l.hidden).forEach(link => {
-      html += `<button class="sb-btn ext-btn" onclick="window.open('${link.url}','_blank')" title="${link.name} — abre en nueva pestaña">
-        <i class="fas ${link.icon||'fa-external-link-alt'} sb-icon" style="color:#a78bfa;"></i>
-        <span class="sb-btn-text">${link.name}</span>
-        <i class="fas fa-external-link-alt" style="font-size:.6rem;margin-left:auto;color:var(--muted2);"></i>
-      </button>`;
-    });
-  }
-
-  // Acerca de nosotros
-  if (SITE_CONFIG.showAboutSidebar !== false) {
-    html += sbBtn('about','fa-info-circle','Acerca de Nosotros',"showSection('about')",'','var(--muted)');
-  }
-
-  // Contáctanos
-  if (SITE_CONFIG.showContactoSidebar !== false) {
-    html += sbBtn('contacto','fa-envelope','Contáctanos',"showSection('contacto');renderContactSection()",'sb-contacto-btn','var(--primary)');
   }
 
   nav.innerHTML = html;
@@ -1611,10 +1647,19 @@ function showSection(name) {
     history.pushState({section: name}, name, '/');
     document.title = (window._APP_TITLE || 'DiartixAcademy') + ' — Cursos Online';
   }
+  // Clear page bg when navigating to non-home sections
+  if (name !== 'home') {
+    document.querySelectorAll('.page-bg-layer').forEach(el => el.remove());
+    document.body.style.removeProperty('background');
+    document.body.style.removeProperty('background-image');
+  } else {
+    applyPageBackground('home');
+  }
   document.querySelector('.main')?.scrollTo(0, 0);
   renderSidebar();
 }
 function showAdminCursos() {
+  document.querySelectorAll('.page-bg-layer').forEach(el=>el.remove());
   currentSection='admin-cursos';
   document.querySelectorAll('.page-sec').forEach(s=>s.classList.remove('active'));
   document.getElementById('sec-admin-cursos').classList.add('active');
@@ -1657,6 +1702,7 @@ function showAdminLogo() {
   renderSidebar();
 }
 function goHome() {
+  applyPageBackground('home');
   currentCat=null;
   showSection('home');
   history.pushState({}, 'Inicio', '/');
@@ -1666,6 +1712,7 @@ function goHome() {
 
 function showCatByKey(key) {
   currentSection='category'; currentCat=key;
+  setTimeout(() => applyPageBackground('cat', key), 50);
   renderSidebar();  // Update sidebar active state immediately
   let catCourses, catTitle, catBanner='', catColor='';
   if (key==='masvendidos') {
@@ -1731,10 +1778,17 @@ function showCatByKey(key) {
   document.title = (window._APP_TITLE || 'DiartixAcademy') + ' — ' + (catTitle || key).replace(/<[^>]*>/g,'');
   document.querySelector('.main')?.scrollTo(0,0);
   renderSidebar();
+  // Show bg edit button for admins
+  const catBgBtn = document.getElementById('catBgEditBtn');
+  if (catBgBtn) {
+    catBgBtn.style.display = (currentUser&&['admin','owner','superadmin'].includes(currentUser.role)) ? '' : 'none';
+    catBgBtn.onclick = () => openPageBgEditor('cat', key);
+  }
 }
 
 // ═══════════════════════ ALL COURSES ═══════════════════════
 function showAllCourses() {
+  document.querySelectorAll('.page-bg-layer').forEach(el=>el.remove());
   currentSection='all';
   document.querySelectorAll('.page-sec').forEach(s=>s.classList.remove('active'));
   document.getElementById('sec-all').classList.add('active');
@@ -1848,6 +1902,9 @@ function renderFeatured() {
   renderHomeMasVendido();
   const statEl = document.getElementById('stat-cursos');
   if (statEl) statEl.textContent = courses.filter(c=>!c.hidden).length;
+  // Show bg edit button for admins on home
+  const hbtn = document.getElementById('homeBgEditBtn');
+  if (hbtn) hbtn.style.display = (currentUser&&['admin','owner','superadmin'].includes(currentUser.role)) ? '' : 'none';
 }
 
 // ═══════════════════════ COURSE DETAIL ═══════════════════════
@@ -1858,6 +1915,9 @@ async function showCourseDetail(id) {
   // Siempre recargar bloques desde la API para tener datos actualizados
   try {
     const detail = await apiFetch(`${API.cursos}${course.slug}/`);
+    course.layoutBlocks = (detail.bloques || []).filter(b=>b.tipo==='layout-section').map(b=>{
+      try { return JSON.parse(b.contenido||'{}'); } catch(e) { return {}; }
+    });
     course.blocks = (detail.bloques || []).map(b => {
       if (b.tipo === 'temario') return {type:'temario', items: (b.contenido||'').split('\n').filter(x=>x)};
       if (b.tipo === 'testimonio') return {type:'testimonio', text:b.texto, author:b.autor, stars:b.estrellas};
@@ -1936,8 +1996,19 @@ async function showCourseDetail(id) {
     <div class="detail-bottom-actions">
       <button class="btn-buy" onclick="window.open('${course.buyUrl||'#'}','_blank')"><i class="fas fa-book-open"></i> Adquirir Curso</button>
       <a class="btn-wa" href="${waUrl}" target="_blank"><i class="fab fa-whatsapp"></i> Consultar por WhatsApp</a>
-    </div>`;
+    </div>
+    ${currentUser && ['admin','owner','superadmin'].includes(currentUser.role) ? `
+    <div style="display:flex;justify-content:center;gap:10px;margin:16px 0 8px;flex-wrap:wrap;">
+      <button class="action-btn" onclick="editCourse(${course.id})" style="border-color:rgba(62,166,255,.3);color:var(--primary);padding:8px 18px;">
+        <i class="fas fa-edit"></i> Editar curso
+      </button>
+      <button class="action-btn" onclick="openPageBgEditor('course',${course.id})" style="border-color:rgba(167,139,250,.3);color:#a78bfa;padding:8px 18px;">
+        <i class="fas fa-fill-drip"></i> Editar fondo de página
+      </button>
+    </div>` : ''}`;
 
+  // Apply page background for this course
+  applyPageBackground('course', course.id);
   // Actualizar URL del navegador para compartir
   if (course.slug) {
     history.pushState({courseId: id}, course.title, `/cursos/${course.slug}/`);
@@ -2052,22 +2123,17 @@ function renderAdminTable() {
       ? '<i class="fas fa-sort-up" style="color:var(--primary);margin-left:4px;font-size:.6rem;"></i>'
       : '<i class="fas fa-sort-down" style="color:var(--primary);margin-left:4px;font-size:.6rem;"></i>';
   }
-  function sortBy(c) {
-    if (adminCoursesSort.col===c) adminCoursesSort.dir = adminCoursesSort.dir==='asc'?'desc':'asc';
-    else adminCoursesSort = {col:c, dir:'asc'};
-    renderAdminTable();
-  }
 
   // Header
   const thead = document.querySelector('#adminTableBody')?.closest('table')?.querySelector('thead tr');
   if (thead) {
     thead.innerHTML = `
-      <th onclick="sortBy('title')" style="cursor:pointer;user-select:none;font-size:.7rem;">Título${sortArrow('title')}</th>
-      <th onclick="sortBy('cat')" style="cursor:pointer;user-select:none;font-size:.7rem;">Cat.${sortArrow('cat')}</th>
-      <th onclick="sortBy('creator')" style="cursor:pointer;user-select:none;font-size:.7rem;">Creado por${sortArrow('creator')}</th>
-      <th onclick="sortBy('created')" style="cursor:pointer;user-select:none;font-size:.7rem;">Fecha${sortArrow('created')}</th>
+      <th onclick="_adminSortBy('title')" style="cursor:pointer;user-select:none;font-size:.7rem;">Título${sortArrow('title')}</th>
+      <th onclick="_adminSortBy('cat')" style="cursor:pointer;user-select:none;font-size:.7rem;">Cat.${sortArrow('cat')}</th>
+      <th onclick="_adminSortBy('creator')" style="cursor:pointer;user-select:none;font-size:.7rem;">Creado por${sortArrow('creator')}</th>
+      <th onclick="_adminSortBy('created')" style="cursor:pointer;user-select:none;font-size:.7rem;">Fecha${sortArrow('created')}</th>
       <th style="font-size:.7rem;">Estado</th>
-      <th onclick="sortBy('link')" style="cursor:pointer;user-select:none;font-size:.7rem;">Link${sortArrow('link')}</th>
+      <th onclick="_adminSortBy('link')" style="cursor:pointer;user-select:none;font-size:.7rem;">Link${sortArrow('link')}</th>
       <th style="font-size:.7rem;">Acciones</th>`;
   }
 
@@ -2094,8 +2160,8 @@ function renderAdminTable() {
     const canMVHome   = !c.masvendidoHome && masVendidoCount >= LIMIT;
 
     return `<tr style="${rowStyle}">
-      <td style="min-width:140px;max-width:200px;">
-        <div style="font-weight:700;font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px;" title="${c.title}">${c.emoji||'📚'} ${c.title}${brokenBadge}</div>
+      <td style="min-width:140px;max-width:200px;cursor:pointer;" onclick="showCourseDetail(${c.id})" title="Ver curso">
+        <div style="font-weight:700;font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px;color:var(--primary);">${c.emoji||'📚'} ${c.title}${brokenBadge}</div>
         ${c.hidden?'<span style="font-size:.58rem;color:var(--gold);font-weight:700;">OCULTO</span>':''}
       </td>
       <td style="max-width:110px;"><span style="padding:2px 7px;border-radius:20px;font-size:.62rem;font-weight:700;white-space:nowrap;display:inline-block;max-width:105px;overflow:hidden;text-overflow:ellipsis;" class="${catPillClass(c.cat)}" title="${cat?cat.name:c.cat}">${cat?cat.name:c.cat}</span></td>
@@ -2150,6 +2216,212 @@ function renderAdminTablePagination(pages, total) {
 }
 
 // ── Featured Home / MasVendido Home toggles (max 8) ──
+// ═══════════════════ PAGE BACKGROUND ENGINE ═══════════════════
+
+function applyPageBackground(ctx, id) {
+  // ctx = 'home' | 'course' | 'cat' | 'list'
+  // Remove any existing page bg overlay
+  document.querySelectorAll('.page-bg-layer').forEach(el => el.remove());
+  const bg = _getPageBg(ctx, id);
+  if (!bg || bg.type === 'none' || bg.type === undefined) {
+    document.body.style.background = '';
+    document.body.style.backgroundImage = '';
+    return;
+  }
+  _applyBgToBody(bg);
+}
+
+function _getPageBg(ctx, id) {
+  if (ctx === 'home') return PAGE_BG.home || {};
+  if (ctx === 'course') return (PAGE_BG.courses || {})[id] || {};
+  if (ctx === 'cat') return (PAGE_BG.cats || {})[id] || {};
+  return {};
+}
+
+function _setPageBg(ctx, id, bg) {
+  if (ctx === 'home') { PAGE_BG.home = bg; }
+  else if (ctx === 'course') { if (!PAGE_BG.courses) PAGE_BG.courses={}; PAGE_BG.courses[id]=bg; }
+  else if (ctx === 'cat') { if (!PAGE_BG.cats) PAGE_BG.cats={}; PAGE_BG.cats[id]=bg; }
+  _savePageBgToStorage();
+}
+
+function _applyBgToBody(bg) {
+  // Always remove existing bg layers first
+  document.querySelectorAll('.page-bg-layer').forEach(el => el.remove());
+  // Clear any previous body bg
+  document.body.style.removeProperty('background');
+  document.body.style.removeProperty('background-image');
+  document.body.style.removeProperty('background-color');
+
+  if (!bg || bg.type === 'none') return;
+
+  const dirs = {lr:'to right', rl:'to left', tb:'to bottom', bt:'to top'};
+
+  // Create a fixed full-screen background layer BEHIND everything (z-index: -1)
+  const bgLayer = document.createElement('div');
+  bgLayer.className = 'page-bg-layer';
+  bgLayer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:-2;';
+
+  if (bg.type === 'color') {
+    bgLayer.style.background = bg.color || '#0a0d1a';
+  } else if (bg.type === 'gradient') {
+    const dir = dirs[bg.gradDir] || 'to bottom';
+    bgLayer.style.background = 'linear-gradient('+dir+','+(bg.color1||'#0a0d1a')+','+(bg.color2||'#1a2540')+')';
+  } else if (bg.imgUrl) {
+    const att = (bg.type==='parallax'||bg.type==='fixed') ? 'fixed' : 'scroll';
+    const repeat = bg.repeat ? 'repeat' : 'no-repeat';
+    bgLayer.style.backgroundImage  = 'url('+JSON.stringify(bg.imgUrl)+')';
+    bgLayer.style.backgroundSize   = bg.type==='tile' ? 'auto' : 'cover';
+    bgLayer.style.backgroundPosition = 'center top';
+    bgLayer.style.backgroundAttachment = att;
+    bgLayer.style.backgroundRepeat = repeat;
+
+    // Blur layer — separate div with same bg + filter
+    if (bg.blur > 0) {
+      const blurLayer = document.createElement('div');
+      blurLayer.className = 'page-bg-layer';
+      blurLayer.style.cssText = bgLayer.style.cssText;
+      blurLayer.style.backgroundImage = bgLayer.style.backgroundImage;
+      blurLayer.style.backgroundSize  = bgLayer.style.backgroundSize;
+      blurLayer.style.backgroundPosition = bgLayer.style.backgroundPosition;
+      blurLayer.style.backgroundAttachment = bgLayer.style.backgroundAttachment;
+      blurLayer.style.backgroundRepeat = bgLayer.style.backgroundRepeat;
+      blurLayer.style.filter  = 'blur('+bg.blur+'px)';
+      blurLayer.style.transform = 'scale(1.05)'; // prevent blur edge artifacts
+      blurLayer.style.zIndex  = '-2';
+      document.body.appendChild(blurLayer);
+      bgLayer.style.backgroundImage = ''; // don't show unblurred image
+    }
+  }
+
+  document.body.appendChild(bgLayer);
+
+  // Overlay layer (color + opacity) — also behind UI but above bg image
+  if (bg.overlayOpacity > 0) {
+    const ov = document.createElement('div');
+    ov.className = 'page-bg-layer';
+    ov.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:-1;';
+    ov.style.background = bg.overlayColor || '#000000';
+    ov.style.opacity = bg.overlayOpacity;
+    document.body.appendChild(ov);
+  }
+}
+
+// ── Page BG Editor ──
+function openPageBgEditor(ctx, id) {
+  _pageBgContext = {ctx, id};
+  const bg = _getPageBg(ctx, id) || {};
+  // Populate fields
+  document.getElementById('pgBgType').value         = bg.type      || 'none';
+  document.getElementById('pgBgImgUrl').value       = bg.imgUrl    || '';
+  document.getElementById('pgBgColor').value        = bg.color     || '#0a0d1a';
+  document.getElementById('pgBgGradDir').value      = bg.gradDir   || 'tb';
+  document.getElementById('pgBgColor1').value       = bg.color1    || '#0a0d1a';
+  document.getElementById('pgBgColor2').value       = bg.color2    || '#1a2540';
+  document.getElementById('pgBgOverlayColor').value = bg.overlayColor || '#000000';
+  document.getElementById('pgBgOverlayOp').value    = bg.overlayOpacity != null ? bg.overlayOpacity : 0;
+  document.getElementById('pgBgOverlayOpVal').textContent = Math.round((bg.overlayOpacity||0)*100)+'%';
+  document.getElementById('pgBgBlur').value         = bg.blur      || 0;
+  document.getElementById('pgBgBlurVal').textContent = (bg.blur||0)+'px';
+  document.getElementById('pgBgRepeat').checked     = !!bg.repeat;
+  // Populate templates
+  _renderBgTemplatesList();
+  _togglePgBgFields();
+  document.getElementById('pgBgModal').classList.add('open');
+}
+
+function _togglePgBgFields() {
+  const t = document.getElementById('pgBgType').value;
+  document.getElementById('pgBgImgRow').style.display  = ['scroll','parallax','fixed','tile'].includes(t)?'':'none';
+  document.getElementById('pgBgColorRow').style.display = t==='color'?'':'none';
+  document.getElementById('pgBgGradRow').style.display  = t==='gradient'?'':'none';
+  document.getElementById('pgBgImgEffects').style.display = ['scroll','parallax','fixed','tile'].includes(t)?'':'none';
+}
+
+function savePageBgEditor() {
+  const t = document.getElementById('pgBgType').value;
+  const bg = {
+    type:           t,
+    imgUrl:         document.getElementById('pgBgImgUrl').value.trim(),
+    color:          document.getElementById('pgBgColor').value,
+    gradDir:        document.getElementById('pgBgGradDir').value,
+    color1:         document.getElementById('pgBgColor1').value,
+    color2:         document.getElementById('pgBgColor2').value,
+    overlayColor:   document.getElementById('pgBgOverlayColor').value,
+    overlayOpacity: parseFloat(document.getElementById('pgBgOverlayOp').value),
+    blur:           parseFloat(document.getElementById('pgBgBlur').value),
+    repeat:         document.getElementById('pgBgRepeat').checked,
+  };
+  const {ctx, id} = _pageBgContext || {ctx:'home'};
+  _setPageBg(ctx, id, bg);
+  applyPageBackground(ctx, id);
+  document.getElementById('pgBgModal').classList.remove('open');
+  showToast('✓ Fondo guardado','success');
+}
+
+function saveBgAsTemplate() {
+  const name = prompt('Nombre para esta plantilla de fondo:');
+  if (!name || !name.trim()) return;
+  const t = document.getElementById('pgBgType').value;
+  const tpl = {
+    name: name.trim(),
+    type: t,
+    imgUrl:         document.getElementById('pgBgImgUrl').value.trim(),
+    color:          document.getElementById('pgBgColor').value,
+    gradDir:        document.getElementById('pgBgGradDir').value,
+    color1:         document.getElementById('pgBgColor1').value,
+    color2:         document.getElementById('pgBgColor2').value,
+    overlayColor:   document.getElementById('pgBgOverlayColor').value,
+    overlayOpacity: parseFloat(document.getElementById('pgBgOverlayOp').value),
+    blur:           parseFloat(document.getElementById('pgBgBlur').value),
+    repeat:         document.getElementById('pgBgRepeat').checked,
+  };
+  BG_TEMPLATES.push(tpl);
+  _saveBgTemplatesToStorage();
+  _renderBgTemplatesList();
+  showToast('Plantilla "'+name.trim()+'" guardada ✓','success');
+}
+
+function loadBgTemplate(idx) {
+  const tpl = BG_TEMPLATES[idx];
+  if (!tpl) return;
+  document.getElementById('pgBgType').value         = tpl.type     || 'none';
+  document.getElementById('pgBgImgUrl').value       = tpl.imgUrl   || '';
+  document.getElementById('pgBgColor').value        = tpl.color    || '#0a0d1a';
+  document.getElementById('pgBgGradDir').value      = tpl.gradDir  || 'tb';
+  document.getElementById('pgBgColor1').value       = tpl.color1   || '#0a0d1a';
+  document.getElementById('pgBgColor2').value       = tpl.color2   || '#1a2540';
+  document.getElementById('pgBgOverlayColor').value = tpl.overlayColor || '#000000';
+  document.getElementById('pgBgOverlayOp').value    = tpl.overlayOpacity != null ? tpl.overlayOpacity : 0;
+  document.getElementById('pgBgOverlayOpVal').textContent = Math.round((tpl.overlayOpacity||0)*100)+'%';
+  document.getElementById('pgBgBlur').value         = tpl.blur     || 0;
+  document.getElementById('pgBgBlurVal').textContent = (tpl.blur||0)+'px';
+  document.getElementById('pgBgRepeat').checked     = !!tpl.repeat;
+  _togglePgBgFields();
+  showToast('Plantilla "'+tpl.name+'" cargada','success');
+}
+
+function deleteBgTemplate(idx) {
+  BG_TEMPLATES.splice(idx, 1);
+  _saveBgTemplatesToStorage();
+  _renderBgTemplatesList();
+}
+
+function _renderBgTemplatesList() {
+  const el = document.getElementById('pgBgTemplatesList');
+  if (!el) return;
+  if (!BG_TEMPLATES.length) {
+    el.innerHTML = '<p style="font-size:.75rem;color:var(--muted);">Sin plantillas guardadas.</p>';
+    return;
+  }
+  el.innerHTML = BG_TEMPLATES.map((t,i)=>`
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">
+      <span style="flex:1;font-size:.8rem;color:var(--text);">${t.name} <span style="color:var(--muted);font-size:.68rem;">(${t.type})</span></span>
+      <button class="action-btn" onclick="loadBgTemplate(${i})" style="padding:4px 10px;font-size:.72rem;color:var(--primary);">Cargar</button>
+      <button class="action-btn del" onclick="deleteBgTemplate(${i})" style="padding:4px 8px;"><i class="fas fa-trash"></i></button>
+    </div>`).join('');
+}
+
 function _saveCourseHomeToStorage() {
   try {
     const data = {};
@@ -2491,8 +2763,18 @@ async function editCourse(id) {
     builderBlocks = (detail.bloques || []).map(b => {
       if (b.tipo === 'temario') return {type:'temario', items:(b.contenido||'').split('\n').filter(x=>x)};
       if (b.tipo === 'testimonio') return {type:'testimonio', text:b.texto||'', author:b.autor||'', stars:b.estrellas||5};
+      if (b.tipo === 'testimonio-group') {
+        try { return {type:'testimonio-group', testimonials:JSON.parse(b.contenido||'[]')}; }
+        catch(e) { return {type:'testimonio-group', testimonials:[{text:b.texto||'', author:b.autor||'', stars:b.estrellas||5}]}; }
+      }
       if (b.tipo === 'imagen') return {type:'imagen', url:b.contenido||''};
       if (b.tipo === 'seccion') return {type:'seccion', titulo:b.texto||'Nueva Sección'};
+      if (b.tipo === 'layout-section') {
+        try {
+          const data = JSON.parse(b.contenido||'{}');
+          return {type:'layout-section', layoutType:data.layoutType, layoutLabel:data.layoutLabel, title:data.title||b.texto, blocks:data.blocks||[], background:data.background||{}, showTitle:data.showTitle!==false, _splitPct:data._splitPct, _sectionId:data._sectionId||('cs'+Date.now())};
+        } catch(e) { return {type:'layout-section', layoutType:'text-center', title:b.texto||'Sección', blocks:[], background:{}}; }
+      }
       return {type:'descripcion', text:b.texto||''};
     });
     c.bannerUrl = detail.imagen_banner;
@@ -2707,10 +2989,15 @@ function openCourseBlockBg(blockIdx) {
   document.getElementById('bgEdType').value      = bg.type      || 'none';
   document.getElementById('bgEdImgUrl').value    = bg.imgUrl    || '';
   document.getElementById('bgEdOverlay').value   = bg.overlay   || 'none';
+  document.getElementById('bgEdOverlayColor').value = bg.overlayColor || '#000000';
+  document.getElementById('bgEdOverlayOp').value    = bg.overlayOpacity != null ? bg.overlayOpacity : 0.35;
+  document.getElementById('bgEdOverlayOpVal').textContent = Math.round((bg.overlayOpacity!=null?bg.overlayOpacity:0.35)*100)+'%';
   document.getElementById('bgEdGradDir').value   = bg.gradDir   || 'lr';
   document.getElementById('bgEdColor1').value    = bg.color1    || '#ff8c42';
   document.getElementById('bgEdColor2').value    = bg.color2    || '#3ea6ff';
-  document.getElementById('bgEdBlur').checked    = !!bg.blur;
+  const blurVal = (typeof bg.blur === 'number') ? bg.blur : (bg.blur ? 8 : 0);
+  document.getElementById('bgEdBlur').value    = blurVal;
+  document.getElementById('bgEdBlurVal').textContent = blurVal+'px';
   document.getElementById('bgEdFullWidth').checked = bg.fullWidth !== false;
   document.getElementById('bgEdCorners').value   = bg.corners   || 'square';
   document.getElementById('bgEdOpacity').value   = bg.opacity != null ? bg.opacity : 1;
@@ -2744,8 +3031,10 @@ async function saveCourse() {
   const bloques = builderBlocks.map((b, i) => {
     if (b.type==='temario') return {tipo:'temario', orden:i, contenido:(b.items||[]).join('\n'), texto:'', autor:'', estrellas:5};
     if (b.type==='testimonio') return {tipo:'testimonio', orden:i, texto:b.text||'', autor:b.author||'', estrellas:b.stars||5, contenido:''};
+    if (b.type==='testimonio-group') return {tipo:'testimonio-group', orden:i, contenido:JSON.stringify(b.testimonials||[]), texto:'', autor:'', estrellas:5};
     if (b.type==='imagen') return {tipo:'imagen', orden:i, contenido:b.url||'', texto:'', autor:'', estrellas:5};
     if (b.type==='seccion') return {tipo:'seccion', orden:i, texto:b.titulo||'', contenido:'', autor:'', estrellas:5};
+    if (b.type==='layout-section') return {tipo:'layout-section', orden:i, contenido:JSON.stringify({layoutType:b.layoutType, layoutLabel:b.layoutLabel, title:b.title, blocks:b.blocks, background:b.background, showTitle:b.showTitle, _splitPct:b._splitPct, _sectionId:b._sectionId}), texto:b.title||'', autor:'', estrellas:5};
     return {tipo:'descripcion', orden:i, texto:b.text||'', contenido:'', autor:'', estrellas:5};
   });
 
@@ -3010,10 +3299,15 @@ function renderLayoutEditor(sec) {
         <select onchange="editorBlocks[${idx}].fontSize=this.value;refreshLayoutPreview()" class="filter-select" style="font-size:.7rem;padding:4px 6px;">
           ${['.8rem','Xs','.9rem','Sm','1rem','Normal','1.1rem','Md','1.25rem','Lg','1.5rem','Xl','2rem','2xl'].reduce((a,v,i)=>i%2===0?[...a,[v]]:a.map((x,j)=>j===a.length-1?[...x,v]:x),[]).map(([k,v])=>`<option value="${k}" ${b.fontSize===k?'selected':''}>${v}</option>`).join('')}
         </select>
-        <select onchange="editorBlocks[${idx}].align=this.value;refreshLayoutPreview()" class="filter-select" style="font-size:.7rem;padding:4px 6px;">
+        <select onchange="editorBlocks[${idx}].align=this.value;refreshLayoutPreview()" class="filter-select" style="font-size:.7rem;padding:4px 6px;" title="Alineación horizontal">
           <option value="left" ${b.align==='left'?'selected':''}>← Izq</option>
           <option value="center" ${b.align==='center'?'selected':''}>↔ Cen</option>
           <option value="right" ${b.align==='right'?'selected':''}>→ Der</option>
+        </select>
+        <select onchange="editorBlocks[${idx}].vAlign=this.value;refreshLayoutPreview()" class="filter-select" style="font-size:.7rem;padding:4px 6px;" title="Centrado vertical">
+          <option value="top" ${(b.vAlign||'top')==='top'?'selected':''}>↑ Arriba</option>
+          <option value="center" ${b.vAlign==='center'?'selected':''}>↕ Centro</option>
+          <option value="bottom" ${b.vAlign==='bottom'?'selected':''}>↓ Abajo</option>
         </select>
         <label style="display:flex;align-items:center;gap:2px;font-size:.7rem;cursor:pointer;color:var(--muted);">
           <input type="checkbox" ${b.bold?'checked':''} onchange="editorBlocks[${idx}].bold=this.checked;refreshLayoutPreview()" style="accent-color:var(--primary);"/> <b>N</b>
@@ -3494,20 +3788,20 @@ function renderHomeDynamicSections() {
       } else if (bg.imgUrl) {
         const att = bg.type === 'parallax' ? 'fixed' : 'scroll';
         bgStyle = `background-image:url('${bg.imgUrl}');background-size:cover;background-position:center;background-attachment:${att};padding:32px 24px;position:relative;overflow:hidden;border-radius:${radius};`;
-        if (bg.blur) bgStyle += 'filter:none;'; // blur via pseudo
-        // Overlay inside
-        if (bg.overlay === 'dark')
-          overlayHtml = `<div style="position:absolute;inset:0;background:rgba(0,0,0,.35);z-index:0;border-radius:${radius};"></div>`;
-        else if (bg.overlay === 'vignette')
-          overlayHtml = `<div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.65) 100%);z-index:0;border-radius:${radius};"></div>`;
-        // Blur: wrap image in pseudo via inner div
-        if (bg.blur)
-          overlayHtml += `<div style="position:absolute;inset:0;background:inherit;filter:blur(8px);z-index:-1;transform:scale(1.05);border-radius:${radius};"></div>`;
+        // Overlay + blur fix
+        const ovOp = bg.overlayOpacity != null ? bg.overlayOpacity : (bg.overlay==='dark'?0.35:0);
+        const ovColor = bg.overlayColor || '#000000';
+        if (bg.blur > 0) {
+          overlayHtml += '<div style="position:absolute;inset:0;background:inherit;filter:blur('+bg.blur+'px);transform:scale(1.08);z-index:0;border-radius:'+radius+';pointer-events:none;"></div>';
+        }
+        if (bg.overlay === 'vignette')
+          overlayHtml += '<div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.65) 100%);z-index:1;border-radius:'+radius+';pointer-events:none;"></div>';
+        else if (ovOp > 0)
+          overlayHtml += '<div style="position:absolute;inset:0;background:'+ovColor+';opacity:'+ovOp+';z-index:1;border-radius:'+radius+';pointer-events:none;"></div>';
         if (opacity < 1)
-          overlayHtml += `<div style="position:absolute;inset:0;background:rgba(255,255,255,${1-opacity});z-index:0;border-radius:${radius};"></div>`;
+          overlayHtml += '<div style="position:absolute;inset:0;background:rgba(255,255,255,'+(1-opacity)+');z-index:1;border-radius:'+radius+';pointer-events:none;"></div>';
       }
     }
-
     const hasBg = bg.type && bg.type !== 'none';
     const contentStyle = hasBg ? 'position:relative;z-index:1;' : '';
     // Full width: use negative margin to break out of main padding
@@ -3526,7 +3820,12 @@ function renderLayoutSection(sec) {
   function renderTxt(b) {
     if (!b) return '';
     const ff = b.fontFamily === 'fraunces' ? "'Fraunces',serif" : "'Plus Jakarta Sans',sans-serif";
-    return '<div style="font-family:'+ff+';font-size:'+(b.fontSize||'1rem')+';text-align:'+(b.align||'left')+';'+(b.bold?'font-weight:700;':'')+(b.color?'color:'+b.color+';':'color:var(--muted);')+'line-height:1.75;word-break:break-word;display:flex;flex-direction:column;justify-content:center;align-self:center;width:100%;">'+(b.content||'').split('\n').join('<br/>')+'</div>';
+    const vAlign = b.vAlign||'top'; const hAlign = b.align||'left';
+    const justifyContent = vAlign==='center'?'center':vAlign==='bottom'?'flex-end':'flex-start';
+    const alignItems = hAlign==='center'?'center':hAlign==='right'?'flex-end':'flex-start';
+    // Use flex container for alignment, inner div for text
+    const innerStyle = 'font-family:'+ff+';font-size:'+(b.fontSize||'1rem')+';text-align:'+hAlign+';'+(b.bold?'font-weight:700;':'')+(b.color?'color:'+b.color+';':'color:var(--muted);')+'line-height:1.75;word-break:break-word;width:100%;';
+    return '<div style="display:flex;flex-direction:column;justify-content:'+justifyContent+';align-items:'+alignItems+';align-self:stretch;width:100%;min-height:60px;padding:8px 0;"><div style="'+innerStyle+'">'+(b.content||'').split('\n').join('<br/>')+'</div></div>';
   }
   function renderImg(b) {
     if (!b || !b.url) return '';
@@ -3707,35 +4006,8 @@ function selectLayoutOpt(id) {
   });
 }
 
-function confirmAddSection() {
-  const name = document.getElementById('newSecName').value.trim();
-  if (!name) { showToast('Escribí un nombre para la sección','error'); return; }
-  if (!selectedLayoutOpt) { showToast('Elegí un tipo de sección','error'); return; }
-  const opt = LAYOUT_OPTIONS.find(o=>o.id===selectedLayoutOpt);
-  const newSec = {
-    id: 'hs'+Date.now(),
-    type: 'layout',
-    layoutType: selectedLayoutOpt,
-    layoutLabel: opt?.label || selectedLayoutOpt,
-    title: name,
-    displayTitle: name,
-    showTitle: true,
-    titleStyle: {font:'fraunces', size:'1.3rem', color:'', bold:true},
-    visible: true,
-    locked: false,
-    blocks: _buildDefaultBlocks(selectedLayoutOpt),
-    // For carousel/banner
-    carouselItems: [],
-    carouselInterval: 5,
-    bannerHeight: '220px',
-    bannerUrl: '',
-  };
-  HOME_SECTIONS.push(newSec);
-  renderHomeSectionsList();
-  saveHomeSectionsToStorage();
-  document.getElementById('addSectionModal').classList.remove('open');
-  showToast(`Sección "${name}" creada. Bajá a Panel Inicio para editarla.`, 'success');
-}
+// confirmAddSection() is defined earlier (supports both course and home modes)
+
 
 function _buildDefaultBlocks(layoutType) {
   const txt = () => ({type:'text', content:'Escribí aquí tu texto...', align:'left', fontSize:'1rem', bold:false, color:'', fontFamily:'sans'});
@@ -4025,58 +4297,112 @@ function showAdminSuperUsers() {
 }
 
 async function renderSuperUsers() {
-  const el = document.getElementById('superUsersBody');
-  if (!el) return;
-  el.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted);"><i class="fas fa-spinner fa-spin"></i></td></tr>';
+  const STAFF = ['superadmin','owner','admin','staff','instructor'];
+  const roleF   = document.getElementById('superUsersFilterRole')?.value || '';
+  const searchF = document.getElementById('superUsersFilterSearch')?.value.toLowerCase() || '';
+
+  let allUsers = [];
   try {
-    let users = await apiFetch(API.users);
-    // Apply filters
-    const roleF   = document.getElementById('superUsersFilterRole')?.value || '';
-    const searchF = document.getElementById('superUsersFilterSearch')?.value.toLowerCase() || '';
-    if (roleF)   users = users.filter(u => u.role === roleF);
-    if (searchF) users = users.filter(u => (u.username||'').toLowerCase().includes(searchF) || (u.email||'').toLowerCase().includes(searchF));
-    el.innerHTML = users.map(u => {
-      const rc = ROLE_CONFIG[u.role] || ROLE_CONFIG.cliente;
-      return `<tr>
-        <td>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <div style="width:30px;height:30px;border-radius:50%;background:${rc.bg};color:${rc.color};display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;flex-shrink:0;">
-              ${(u.username||u.email||'U')[0].toUpperCase()}
-            </div>
-            <div>
-              <div style="font-size:.82rem;font-weight:700;">${u.username||'—'}</div>
-              <div style="font-size:.68rem;color:var(--muted);">${u.email}</div>
-            </div>
+    allUsers = await apiFetch(API.users);
+  } catch(e) {
+    const el = document.getElementById('superUsersBody');
+    if (el) el.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--red);padding:20px;">Error cargando usuarios</td></tr>';
+    return;
+  }
+
+  // Filter
+  let filtered = allUsers;
+  if (roleF)   filtered = filtered.filter(u => u.role === roleF);
+  if (searchF) filtered = filtered.filter(u =>
+    (u.username||'').toLowerCase().includes(searchF) || (u.email||'').toLowerCase().includes(searchF));
+
+  const staffUsers  = filtered.filter(u => STAFF.includes(u.role));
+  const clientUsers = filtered.filter(u => !STAFF.includes(u.role));
+
+  // Sort state
+  const sortCol = window._superSort?.col || 'username';
+  const sortDir = window._superSort?.dir || 'asc';
+  function sortFn(a, b) {
+    let va = (a[sortCol]||'').toString().toLowerCase();
+    let vb = (b[sortCol]||'').toString().toLowerCase();
+    return sortDir==='asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+  }
+  staffUsers.sort(sortFn);
+  clientUsers.sort(sortFn);
+
+  function sortArrow(col) {
+    if (sortCol !== col) return '<i class="fas fa-sort" style="opacity:.3;margin-left:3px;font-size:.6rem;"></i>';
+    return sortDir==='asc'
+      ? '<i class="fas fa-sort-up" style="color:var(--primary);margin-left:3px;font-size:.6rem;"></i>'
+      : '<i class="fas fa-sort-down" style="color:var(--primary);margin-left:3px;font-size:.6rem;"></i>';
+  }
+  function thSort(col, label) {
+    return `<th onclick="window._superSort={col:'${col}',dir:(window._superSort?.col==='${col}'&&window._superSort?.dir==='asc'?'desc':'asc')};renderSuperUsers()" style="cursor:pointer;user-select:none;">${label}${sortArrow(col)}</th>`;
+  }
+
+  function rowHtml(u) {
+    const rc = ROLE_CONFIG[u.role] || ROLE_CONFIG.cliente;
+    return `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:${rc.bg};color:${rc.color};display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:800;flex-shrink:0;">
+            ${(u.username||u.email||'U')[0].toUpperCase()}
           </div>
-        </td>
-        <td><span style="padding:2px 8px;border-radius:20px;font-size:.65rem;font-weight:700;background:${rc.bg};color:${rc.color};">
-          <i class="fas ${rc.icon}" style="font-size:.58rem;margin-right:3px;"></i>${rc.label}
-        </span></td>
-        <td style="font-size:.75rem;color:var(--muted);">${u.date_joined?new Date(u.date_joined).toLocaleDateString('es-AR'):'—'}</td>
-        <td style="font-size:.75rem;color:var(--muted);">${u.last_login?new Date(u.last_login).toLocaleDateString('es-AR'):'Nunca'}</td>
-        <td><span style="font-size:.72rem;color:${u.is_active?'var(--green)':'var(--red)'};">
-          <i class="fas ${u.is_active?'fa-check-circle':'fa-times-circle'}"></i> ${u.is_active?'Activo':'Inactivo'}
-        </span></td>
-        <td style="white-space:nowrap;">
-          <select onchange="changeUserRole(${u.id},this.value)" style="background:var(--panel);border:1px solid var(--border2);border-radius:6px;padding:3px 6px;font-size:.7rem;color:var(--text);cursor:pointer;">
-            ${Object.entries(ROLE_CONFIG).map(([k,r])=>`<option value="${k}" ${u.role===k?'selected':''}>${r.label}</option>`).join('')}
-          </select>
-        </td>
-        <td style="white-space:nowrap;display:flex;gap:4px;flex-wrap:wrap;padding:8px 14px;">
+          <div>
+            <div style="font-size:.8rem;font-weight:700;">${u.username||'—'}</div>
+            <div style="font-size:.66rem;color:var(--muted);">${u.email}</div>
+          </div>
+        </div>
+      </td>
+      <td><span style="padding:2px 8px;border-radius:20px;font-size:.63rem;font-weight:700;background:${rc.bg};color:${rc.color};">
+        <i class="fas ${rc.icon}" style="font-size:.56rem;margin-right:2px;"></i>${rc.label}
+      </span></td>
+      <td style="font-size:.73rem;color:var(--muted);">${u.date_joined?new Date(u.date_joined).toLocaleDateString('es-AR'):'—'}</td>
+      <td style="font-size:.73rem;color:var(--muted);">${u.last_login?new Date(u.last_login).toLocaleDateString('es-AR'):'Nunca'}</td>
+      <td><span style="font-size:.7rem;color:${u.is_active?'var(--green)':'var(--red)'};">
+        <i class="fas ${u.is_active?'fa-check-circle':'fa-times-circle'}"></i> ${u.is_active?'Activo':'Inactivo'}
+      </span></td>
+      <td style="white-space:nowrap;">
+        <select onchange="changeUserRole(${u.id},this.value)" style="background:var(--panel);border:1px solid var(--border2);border-radius:6px;padding:3px 6px;font-size:.68rem;color:var(--text);cursor:pointer;">
+          ${Object.entries(ROLE_CONFIG).map(([k,r])=>`<option value="${k}" ${u.role===k?'selected':''}>${r.label}</option>`).join('')}
+        </select>
+      </td>
+      <td style="white-space:nowrap;">
+        <div style="display:flex;gap:3px;">
           <button class="action-btn" onclick="copyEmail('${u.email}')" title="Copiar email"><i class="fas fa-copy"></i></button>
           <button class="action-btn" onclick="editUserEmail(${u.id},'${u.email}')" title="Editar email"><i class="fas fa-edit"></i></button>
           <button class="action-btn" onclick="resetUserPassword(${u.id},'${u.email}')" title="Resetear contraseña"><i class="fas fa-key"></i></button>
-          <button class="action-btn feat-btn" onclick="editUserPermissions(${u.id},'${u.username||u.email}')" title="Personalizar permisos"><i class="fas fa-sliders-h"></i></button>
-          <button class="action-btn hide-btn ${!u.is_active?'hidden-active':''}" onclick="toggleUserActive(${u.id},${u.is_active})" title="${u.is_active?'Desactivar':'Activar'}">
-            <i class="fas ${u.is_active?'fa-user-slash':'fa-user-check'}"></i>
-          </button>
-          <button class="action-btn del" onclick="deleteUser(${u.id},'${u.email}')" title="Eliminar usuario"><i class="fas fa-trash"></i></button>
-        </td>
-      </tr>`;
-    }).join('');
-  } catch(e) {
-    el.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--red);">Error cargando usuarios</td></tr>';
+          <button class="action-btn del" onclick="deleteUser(${u.id},'${u.email}')" title="Eliminar usuario"><i class="fas fa-user-times"></i></button>
+        </div>
+      </td>
+    </tr>`;
   }
+
+  const thead = `<thead><tr>
+    ${thSort('username','Usuario')}
+    ${thSort('role','Rol')}
+    ${thSort('date_joined','Registro')}
+    ${thSort('last_login','Último acceso')}
+    <th>Estado</th>
+    <th>Cambiar Rol</th>
+    <th>Acciones</th>
+  </tr></thead>`;
+
+  // Staff table
+  const staffEl = document.getElementById('superUsersStaffBody');
+  const staffTbl = document.getElementById('superUsersStaffTable');
+  if (staffEl) staffEl.innerHTML = staffUsers.length ? staffUsers.map(rowHtml).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:12px;">Sin roles especiales</td></tr>';
+  if (staffTbl) { const th = staffTbl.querySelector('thead'); if(th) th.outerHTML = thead; }
+
+  // Client table
+  const clientEl = document.getElementById('superUsersBody');
+  if (clientEl) clientEl.innerHTML = clientUsers.length ? clientUsers.map(rowHtml).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:12px;">Sin clientes</td></tr>';
+  const clientTbl = document.getElementById('superUsersClientTable');
+  if (clientTbl) { const th = clientTbl.querySelector('thead'); if(th) th.outerHTML = thead; }
+
+  // Counts
+  const cnt = document.getElementById('superUserCount');
+  if (cnt) cnt.textContent = `(${allUsers.length} total — ${staffUsers.length} staff, ${clientUsers.length} clientes)`;
 }
 
 async function editUserEmail(id, currentEmail) {
@@ -4434,6 +4760,7 @@ async function renderAdminUsers() {
   const el = document.getElementById('adminUsersTableBody');
   if (!el) return;
   el.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>';
+  const STAFF = ['superadmin','owner','admin','staff','instructor'];
   try {
     let users = await apiFetch(API.users);
     const roleF   = document.getElementById('usersFilterRole')?.value || '';
@@ -4442,48 +4769,68 @@ async function renderAdminUsers() {
     if (searchF) users = users.filter(u => (u.username||'').toLowerCase().includes(searchF) || (u.email||'').toLowerCase().includes(searchF));
     // Sort
     users.sort((a,b)=>(a[adminUsersSort.col]||'').toString().localeCompare((b[adminUsersSort.col]||'').toString()) * (adminUsersSort.dir==='asc'?1:-1));
-    // Paginate
-    const total = users.length;
-    const pages = Math.ceil(total/ADMIN_USERS_PER_PAGE);
+
+    const staffUsers  = users.filter(u => STAFF.includes(u.role));
+    const clientUsers = users.filter(u => !STAFF.includes(u.role));
+
+    // Paginate clients only (staff is usually small)
+    const total  = clientUsers.length;
+    const pages  = Math.ceil(total / ADMIN_USERS_PER_PAGE);
     if (adminUsersPage > pages) adminUsersPage = 1;
-    const paged = users.slice((adminUsersPage-1)*ADMIN_USERS_PER_PAGE, adminUsersPage*ADMIN_USERS_PER_PAGE);
+    const paged  = clientUsers.slice((adminUsersPage-1)*ADMIN_USERS_PER_PAGE, adminUsersPage*ADMIN_USERS_PER_PAGE);
+
     const cnt = document.getElementById('adminUserCount');
-    if (cnt) cnt.textContent = `(${total} — página ${adminUsersPage}/${pages||1})`;
+    if (cnt) cnt.textContent = `(${users.length} total — ${staffUsers.length} staff, ${total} clientes)`;
+
+    // ── Staff: compact email+role table ──
+    const staffEl = document.getElementById('adminStaffEmailBody');
+    if (staffEl) {
+      staffEl.innerHTML = staffUsers.length
+        ? staffUsers.map(u => {
+          const rc = ROLE_CONFIG[u.role] || ROLE_CONFIG.cliente;
+          return `<tr>
+            <td style="font-size:.8rem;font-family:monospace;">${u.email}</td>
+            <td><span style="padding:2px 8px;border-radius:20px;font-size:.63rem;font-weight:700;background:${rc.bg};color:${rc.color};">${rc.label}</span></td>
+            <td><button class="action-btn" onclick="copyEmail('${u.email}')" style="padding:4px 8px;" title="Copiar email"><i class="fas fa-copy"></i></button></td>
+          </tr>`;
+        }).join('')
+        : '<tr><td colspan="3" style="color:var(--muted);padding:10px;text-align:center;">Sin staff</td></tr>';
+    }
+
+    // ── Clients: full table paginated ──
     el.innerHTML = paged.length ? paged.map(u => {
       const rc = ROLE_CONFIG[u.role] || ROLE_CONFIG.cliente;
       return `<tr>
         <td>
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div style="width:34px;height:34px;border-radius:50%;background:${rc.bg};color:${rc.color};display:flex;align-items:center;justify-content:center;font-size:.78rem;font-weight:800;flex-shrink:0;border:1px solid ${rc.color}40;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:26px;height:26px;border-radius:50%;background:${rc.bg};color:${rc.color};display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:800;flex-shrink:0;">
               ${(u.username||u.email||'U')[0].toUpperCase()}
             </div>
             <div>
-              <div style="font-weight:700;font-size:.85rem;">${u.username||'—'}</div>
-              <div style="font-size:.72rem;color:var(--muted);">${u.email}</div>
+              <div style="font-size:.8rem;font-weight:700;">${u.username||'—'}</div>
+              <div style="font-size:.66rem;color:var(--muted);">${u.email}</div>
             </div>
           </div>
         </td>
-        <td>
-          <span style="padding:3px 10px;border-radius:20px;font-size:.68rem;font-weight:700;background:${rc.bg};color:${rc.color};">
-            <i class="fas ${rc.icon}" style="margin-right:4px;font-size:.6rem;"></i>${rc.label}
-          </span>
-        </td>
-        <td style="font-size:.78rem;color:var(--muted);">${u.date_joined?new Date(u.date_joined).toLocaleDateString('es-AR'):'—'}</td>
-        <td style="font-size:.78rem;color:var(--muted);">${u.last_login?new Date(u.last_login).toLocaleDateString('es-AR'):'Nunca'}</td>
-        <td style="font-size:.75rem;color:${u.is_active?'var(--green)':'var(--red)'};">
+        <td style="font-size:.72rem;color:var(--muted);">${u.date_joined?new Date(u.date_joined).toLocaleDateString('es-AR'):'—'}</td>
+        <td><span style="font-size:.7rem;color:${u.is_active?'var(--green)':'var(--red)'};">
           <i class="fas ${u.is_active?'fa-check-circle':'fa-times-circle'}"></i> ${u.is_active?'Activo':'Inactivo'}
-        </td>
+        </span></td>
         <td style="white-space:nowrap;">
-          <button class="action-btn" onclick="copyEmail('${u.email}')" title="Copiar email"><i class="fas fa-copy"></i></button>
-          ${u.role!=='admin'&&u.role!=='superadmin'?`<button class="action-btn feat-btn" onclick="changeUserRole(${u.id},'admin')" title="Hacer admin"><i class="fas fa-shield-alt"></i></button>`:''}
-          ${u.role==='admin'?`<button class="action-btn" onclick="changeUserRole(${u.id},'cliente')" title="Quitar admin" style="color:var(--muted);"><i class="fas fa-user-minus"></i></button>`:''}
+          <div style="display:flex;gap:3px;">
+            <button class="action-btn" onclick="copyEmail('${u.email}')" title="Copiar email"><i class="fas fa-copy"></i></button>
+            <button class="action-btn" onclick="editUserEmail(${u.id},'${u.email}')" title="Editar email"><i class="fas fa-edit"></i></button>
+            <button class="action-btn" onclick="resetUserPassword(${u.id},'${u.email}')" title="Resetear contraseña"><i class="fas fa-key"></i></button>
+            <button class="action-btn del" onclick="deleteUser(${u.id},'${u.email}')" title="Eliminar usuario"><i class="fas fa-user-times"></i></button>
+          </div>
         </td>
       </tr>`;
-    }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No hay usuarios registrados aún</td></tr>';
-    // Render pagination
+    }).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;">Sin clientes registrados</td></tr>';
+
+    // Pagination
     let pag = document.getElementById('adminUsersPagination');
     if (pag && pages > 1) {
-      let ph = `<div style="display:flex;gap:6px;justify-content:center;margin-top:16px;flex-wrap:wrap;">`;
+      let ph = `<div style="display:flex;gap:6px;justify-content:center;margin-top:12px;flex-wrap:wrap;">`;
       ph += `<button class="pg-btn" ${adminUsersPage===1?'disabled':''} onclick="adminUsersPage=${adminUsersPage-1};renderAdminUsers()"><i class="fas fa-chevron-left"></i></button>`;
       for (let i=1;i<=pages;i++) {
         if(i===1||i===pages||Math.abs(i-adminUsersPage)<=1) ph+=`<button class="pg-btn ${i===adminUsersPage?'active':''}" onclick="adminUsersPage=${i};renderAdminUsers()">${i}</button>`;
@@ -4492,9 +4839,23 @@ async function renderAdminUsers() {
       ph += `<button class="pg-btn" ${adminUsersPage===pages?'disabled':''} onclick="adminUsersPage=${adminUsersPage+1};renderAdminUsers()"><i class="fas fa-chevron-right"></i></button></div>`;
       pag.innerHTML = ph;
     } else if (pag) pag.innerHTML = '';
+
   } catch(e) {
-    el.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);padding:20px;"><i class="fas fa-exclamation-circle"></i> Error cargando usuarios</td></tr>';
+    el.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--red);padding:20px;"><i class="fas fa-exclamation-circle"></i> Error cargando usuarios</td></tr>';
   }
+}
+
+
+async function deleteUser(id, email) {
+  if (!confirm('¿Eliminar al usuario '+email+'? Esta acción no se puede deshacer.')) return;
+  try {
+    await apiFetch(API.users+id+'/', {method:'DELETE'});
+    showToast('Usuario eliminado ✓','success');
+  } catch(e) {
+    showToast('Error eliminando usuario','error'); return;
+  }
+  renderSuperUsers();
+  renderAdminUsers();
 }
 
 function copyEmail(email) {
@@ -4531,6 +4892,7 @@ function showAdminRoles() {
 function renderAdminRoles() {
   const el = document.getElementById('rolesGrid');
   if (!el) return;
+  renderRolePermsTable(); // also render perms table
   el.innerHTML = Object.entries(ROLE_CONFIG).map(([key, rc]) => `
     <div style="background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:20px;border-left:4px solid ${rc.color};">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
@@ -4545,6 +4907,199 @@ function renderAdminRoles() {
       <p style="font-size:.82rem;color:var(--muted);line-height:1.6;">${rc.desc}</p>
     </div>`).join('');
 }
+
+// ═══════════════════════ USEFUL LINKS (superadmin only, private) ═══════════════════════
+const LS_USEFUL_LINKS_KEY = 'diartix_useful_links_msr'; // private key per superadmin
+
+let USEFUL_LINKS = [];
+
+function _loadUsefulLinks() {
+  try {
+    const d = localStorage.getItem(LS_USEFUL_LINKS_KEY);
+    if (d) USEFUL_LINKS = JSON.parse(d);
+  } catch(e) {}
+}
+function _saveUsefulLinks() {
+  try { localStorage.setItem(LS_USEFUL_LINKS_KEY, JSON.stringify(USEFUL_LINKS)); } catch(e) {}
+}
+
+function showUsefulLinks() {
+  if (!currentUser || currentUser.email !== (window._SUPERADMIN_EMAIL||'martinmorenomsr@gmail.com')) {
+    showToast('Solo el superadmin puede ver esta sección','error'); return;
+  }
+  currentSection = 'admin-useful-links';
+  document.querySelectorAll('.page-sec').forEach(s=>s.classList.remove('active'));
+  const sec = document.getElementById('sec-admin-useful-links');
+  if (sec) { sec.classList.add('active'); renderUsefulLinks(); }
+  renderSidebar();
+}
+
+function renderUsefulLinks() {
+  const el = document.getElementById('usefulLinksList');
+  if (!el) return;
+  if (!USEFUL_LINKS.length) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:.85rem;">Sin links guardados aún. Usá el botón "Agregar link" para empezar.</p>';
+    return;
+  }
+  el.innerHTML = USEFUL_LINKS.map((lk, i) => `
+    <div style="background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:14px 18px;display:flex;align-items:flex-start;gap:12px;margin-bottom:8px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-family:'Fraunces',serif;font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:3px;">
+          ${lk.name}
+          ${lk.type?`<span style="font-size:.65rem;color:var(--muted);font-weight:400;margin-left:6px;">(${lk.type})</span>`:''}
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px;">
+          ${lk.url1?`<a href="${lk.url1}" target="_blank" style="font-size:.72rem;color:var(--primary);background:rgba(62,166,255,.08);padding:3px 10px;border-radius:20px;text-decoration:none;">
+            <i class="fas fa-external-link-alt" style="font-size:.6rem;margin-right:3px;"></i>Link 1
+          </a>`:''}
+          ${lk.url2?`<a href="${lk.url2}" target="_blank" style="font-size:.72rem;color:#a78bfa;background:rgba(167,139,250,.08);padding:3px 10px;border-radius:20px;text-decoration:none;">
+            <i class="fas fa-external-link-alt" style="font-size:.6rem;margin-right:3px;"></i>Link 2 (alternativo)
+          </a>`:''}
+        </div>
+      </div>
+      <div style="display:flex;gap:5px;flex-shrink:0;">
+        <button class="action-btn" onclick="editUsefulLink(${i})" title="Editar" style="padding:5px 9px;"><i class="fas fa-edit"></i></button>
+        <button class="action-btn del" onclick="deleteUsefulLink(${i})" title="Eliminar" style="padding:5px 9px;"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>`).join('');
+}
+
+function openAddUsefulLink() {
+  document.getElementById('ulName').value  = '';
+  document.getElementById('ulUrl1').value  = '';
+  document.getElementById('ulUrl2').value  = '';
+  document.getElementById('ulType').value  = '';
+  document.getElementById('ulEditIdx').value = '-1';
+  document.getElementById('ulModalTitle').textContent = 'Agregar link';
+  document.getElementById('usefulLinkModal').classList.add('open');
+}
+
+function editUsefulLink(i) {
+  const lk = USEFUL_LINKS[i];
+  if (!lk) return;
+  document.getElementById('ulName').value  = lk.name  || '';
+  document.getElementById('ulUrl1').value  = lk.url1  || '';
+  document.getElementById('ulUrl2').value  = lk.url2  || '';
+  document.getElementById('ulType').value  = lk.type  || '';
+  document.getElementById('ulEditIdx').value = i;
+  document.getElementById('ulModalTitle').textContent = 'Editar link';
+  document.getElementById('usefulLinkModal').classList.add('open');
+}
+
+function saveUsefulLink() {
+  const name = document.getElementById('ulName').value.trim();
+  if (!name) { showToast('El nombre es obligatorio','error'); return; }
+  const lk = {
+    name,
+    url1: document.getElementById('ulUrl1').value.trim(),
+    url2: document.getElementById('ulUrl2').value.trim(),
+    type: document.getElementById('ulType').value.trim(),
+  };
+  const idx = parseInt(document.getElementById('ulEditIdx').value);
+  if (idx >= 0) USEFUL_LINKS[idx] = lk;
+  else USEFUL_LINKS.push(lk);
+  _saveUsefulLinks();
+  document.getElementById('usefulLinkModal').classList.remove('open');
+  renderUsefulLinks();
+  showToast('Link guardado ✓','success');
+}
+
+function deleteUsefulLink(i) {
+  if (!confirm('¿Eliminar este link?')) return;
+  USEFUL_LINKS.splice(i, 1);
+  _saveUsefulLinks();
+  renderUsefulLinks();
+  showToast('Link eliminado','success');
+}
+
+// ═══════════════════════ ROLE SIDEBAR PERMISSIONS ═══════════════════════
+const LS_ROLE_PERMS_KEY = 'diartix_role_sidebar_perms';
+const DEFAULT_ROLE_PERMS = {
+  admin:      ['admin','admin-cursos','admin-cats','admin-banners','admin-inicio','admin-contacto','admin-users','admin-stats'],
+  owner:      ['admin','admin-cursos','admin-cats','admin-banners','admin-inicio','admin-contacto','admin-users','admin-stats','admin-config'],
+  instructor: ['admin-cursos','admin-cats'],
+  staff:      ['admin','admin-cursos'],
+};
+let ROLE_SIDEBAR_PERMS = {};
+
+function _loadRolePerms() {
+  try {
+    const d = localStorage.getItem(LS_ROLE_PERMS_KEY);
+    if (d) ROLE_SIDEBAR_PERMS = JSON.parse(d);
+    else   ROLE_SIDEBAR_PERMS = JSON.parse(JSON.stringify(DEFAULT_ROLE_PERMS));
+  } catch(e) { ROLE_SIDEBAR_PERMS = JSON.parse(JSON.stringify(DEFAULT_ROLE_PERMS)); }
+}
+function _saveRolePerms() {
+  try { localStorage.setItem(LS_ROLE_PERMS_KEY, JSON.stringify(ROLE_SIDEBAR_PERMS)); } catch(e) {}
+}
+
+// All possible sidebar items for permission management
+const SIDEBAR_ITEMS = [
+  {key:'admin',         label:'Panel Admin'},
+  {key:'admin-cursos',  label:'Gestionar Cursos'},
+  {key:'admin-cats',    label:'Gestionar Categorías'},
+  {key:'admin-banners', label:'Gestionar Banners'},
+  {key:'admin-inicio',  label:'Panel Inicio'},
+  {key:'admin-contacto',label:'Gestionar Contacto'},
+  {key:'admin-users',   label:'Usuarios'},
+  {key:'admin-stats',   label:'Estadísticas'},
+  {key:'admin-config',  label:'Configuración Visual'},
+  {key:'admin-logo',    label:'Editar Logo'},
+  {key:'admin-emails',  label:'Campañas Email'},
+  {key:'admin-roles',   label:'Gestión de Roles'},
+  {key:'admin-superusers',label:'Superusuarios'},
+  {key:'admin-inicio-super',label:'Gestión Secciones Inicio'},
+  {key:'admin-about',   label:'Gestionar Acerca de'},
+  {key:'admin-links',   label:'Agregar Links'},
+  {key:'admin-footer',  label:'Gestionar Footer'},
+];
+
+function renderRolePermsTable() {
+  const el = document.getElementById('rolePermsTable');
+  if (!el) return;
+  const STAFF_ROLES = ['admin','owner','instructor','staff'];
+  el.innerHTML = STAFF_ROLES.map(role => {
+    const rc = ROLE_CONFIG[role] || {};
+    const perms = ROLE_SIDEBAR_PERMS[role] || [];
+    return `<div style="background:var(--panel);border:1px solid var(--border);border-left:4px solid ${rc.color||'var(--primary)'};border-radius:12px;padding:16px;margin-bottom:12px;">
+      <div style="font-family:'Fraunces',serif;font-size:.88rem;font-weight:800;color:${rc.color||'var(--primary)'};margin-bottom:12px;">
+        <i class="fas ${rc.icon||'fa-user'}"></i> ${rc.label||role}
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${SIDEBAR_ITEMS.map(item => {
+          const has = perms.includes(item.key);
+          return `<button onclick="toggleRolePerm('${role}','${item.key}')"
+            style="padding:4px 10px;border-radius:20px;font-size:.7rem;font-weight:600;cursor:pointer;border:1px solid;transition:all .2s;
+              background:${has?'rgba(52,211,153,.12)':'transparent'};
+              color:${has?'var(--green)':'var(--muted)'};
+              border-color:${has?'rgba(52,211,153,.3)':'var(--border2)'};">
+            ${has?'✓':'+'}  ${item.label}
+          </button>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleRolePerm(role, itemKey) {
+  if (!ROLE_SIDEBAR_PERMS[role]) ROLE_SIDEBAR_PERMS[role] = [];
+  const idx = ROLE_SIDEBAR_PERMS[role].indexOf(itemKey);
+  if (idx >= 0) ROLE_SIDEBAR_PERMS[role].splice(idx, 1);
+  else ROLE_SIDEBAR_PERMS[role].push(itemKey);
+  _saveRolePerms();
+  renderRolePermsTable();
+  renderSidebar();
+  showToast('Permisos actualizados ✓','success');
+}
+
+function resetRolePerms() {
+  if (!confirm('¿Resetear todos los permisos a valores por defecto?')) return;
+  ROLE_SIDEBAR_PERMS = JSON.parse(JSON.stringify(DEFAULT_ROLE_PERMS));
+  _saveRolePerms();
+  renderRolePermsTable();
+  showToast('Permisos reseteados ✓','success');
+}
+
 
 // ═══════════════════════ ADMIN CONFIG (Configuración visual) ═══════════════════════
 function showAdminConfig() {
@@ -4978,11 +5533,13 @@ function saveBgEditor() {
   sec.background = {
     type:      t,
     imgUrl:    document.getElementById('bgEdImgUrl').value.trim(),
-    overlay:   document.getElementById('bgEdOverlay').value,
+    overlay:      document.getElementById('bgEdOverlay').value,
+    overlayColor: document.getElementById('bgEdOverlayColor').value,
+    overlayOpacity: parseFloat(document.getElementById('bgEdOverlayOp').value)||0,
     gradDir:   document.getElementById('bgEdGradDir').value,
     color1:    document.getElementById('bgEdColor1').value,
     color2:    document.getElementById('bgEdColor2').value,
-    blur:      document.getElementById('bgEdBlur').checked,
+    blur:      parseFloat(document.getElementById('bgEdBlur').value)||0,
     fullWidth: document.getElementById('bgEdFullWidth').checked,
     corners:   document.getElementById('bgEdCorners').value,
     opacity:   parseFloat(document.getElementById('bgEdOpacity').value),

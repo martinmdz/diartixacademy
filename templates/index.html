@@ -5,6 +5,9 @@
 
 <!-- HOME -->
 <section class="page-sec active" id="sec-home">
+  <button id="homeBgEditBtn" style="display:none;position:fixed;bottom:80px;right:20px;background:rgba(10,13,26,.85);border:1px solid rgba(167,139,250,.3);color:#a78bfa;padding:8px 14px;border-radius:20px;font-size:.75rem;cursor:pointer;z-index:50;backdrop-filter:blur(6px);" onclick="openPageBgEditor('home')">
+    <i class="fas fa-fill-drip"></i> Fondo
+  </button>
   <div id="videoHeaderWrap"></div>
   <div class="home-hero" id="homeHero">
     <div class="home-hero-left">
@@ -77,6 +80,9 @@
 
 <!-- CATEGORY -->
 <section class="page-sec" id="sec-category">
+  <button id="catBgEditBtn" style="display:none;position:fixed;bottom:80px;right:20px;background:rgba(10,13,26,.85);border:1px solid rgba(167,139,250,.3);color:#a78bfa;padding:8px 14px;border-radius:20px;font-size:.75rem;cursor:pointer;z-index:50;backdrop-filter:blur(6px);">
+    <i class="fas fa-fill-drip"></i> Fondo
+  </button>
   <div class="breadcrumb" id="catBreadcrumb"></div>
   <div id="catBannerHeader"></div>
   <div class="sec-header" style="justify-content:center;">
@@ -289,6 +295,16 @@
     </p>
     <div id="adminInicioCustomSections"></div>
   </div>
+
+  <div class="inicio-panel-card">
+    <h4><i class="fas fa-fill-drip" style="color:#a78bfa;"></i> Fondo de la Página de Inicio</h4>
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">
+      Personalizá el fondo general de la página de inicio. Podés usar imagen, color o degradado.
+    </p>
+    <button class="btn-primary" style="background:linear-gradient(135deg,#6d28d9,#a78bfa);" onclick="openPageBgEditor('home')">
+      <i class="fas fa-fill-drip"></i> Editar fondo de inicio
+    </button>
+  </div>
 </section>
 
 <!-- ADMIN: GESTIONAR CONTACTO -->
@@ -343,21 +359,31 @@
     <h3>
       <span><i class="fas fa-users"></i> Usuarios registrados <span id="adminUserCount" style="font-size:.8rem;color:var(--muted);font-family:'Plus Jakarta Sans',sans-serif;font-weight:400;"></span></span>
     </h3>
+    <div class="admin-filters" style="margin-bottom:14px;">
+      <input class="filter-search" id="usersFilterSearch" placeholder="Buscar por email, nick o rol..." oninput="renderAdminUsers()" style="flex:2;min-width:180px;"/>
+      <select class="filter-select" id="usersFilterRole" onchange="renderAdminUsers()">
+        <option value="">Todos los roles</option>
+        <option value="cliente">Clientes</option>
+        <option value="admin">Admin</option>
+        <option value="owner">Owner</option>
+      </select>
+    </div>
+    <!-- Staff: compact email+role list -->
+    <p style="font-family:'Fraunces',serif;font-size:.82rem;font-weight:700;color:#e11d48;margin-bottom:8px;"><i class="fas fa-shield-alt" style="margin-right:6px;"></i>Staff / Roles especiales</p>
+    <div style="overflow-x:auto;margin-bottom:18px;">
     <table class="admin-table">
-      <thead>
-        <tr>
-          <th>Usuario</th>
-          <th>Rol</th>
-          <th>Registrado</th>
-          <th>Último acceso</th>
-          <th>Estado</th>
-          <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="adminUsersTableBody">
-        <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Cargando...</td></tr>
-      </tbody>
+      <thead><tr><th>Email</th><th>Rol</th><th>Copiar</th></tr></thead>
+      <tbody id="adminStaffEmailBody"><tr><td colspan="3" style="text-align:center;color:var(--muted);padding:10px;">Cargando...</td></tr></tbody>
     </table>
+    </div>
+    <!-- Clients -->
+    <p style="font-family:'Fraunces',serif;font-size:.82rem;font-weight:700;color:var(--primary);margin-bottom:8px;"><i class="fas fa-users" style="margin-right:6px;"></i>Clientes</p>
+    <div style="overflow-x:auto;">
+    <table class="admin-table">
+      <thead><tr><th>Usuario</th><th>Registrado</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody id="adminUsersTableBody"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px;">Cargando...</td></tr></tbody>
+    </table>
+    </div>
     <div id="adminUsersPagination"></div>
   </div>
 </section>
@@ -540,6 +566,23 @@
 </section>
 
 <!-- ADMIN: SUPERUSUARIOS (solo superadmin) -->
+
+<!-- SUPERADMIN: LINKS ÚTILES (privado) -->
+<section class="page-sec" id="sec-admin-useful-links">
+  <div class="sec-header">
+    <div class="sec-title"><i class="fas fa-bookmark" style="color:#e11d48;margin-right:8px;"></i>Links <span style="color:#e11d48;">Útiles</span></div>
+    <button class="btn-primary" style="background:linear-gradient(135deg,#b91c1c,#e11d48);" onclick="openAddUsefulLink()">
+      <i class="fas fa-plus"></i> Agregar link
+    </button>
+  </div>
+  <div class="admin-block">
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:16px;">
+      Links privados visibles solo para vos (superadmin). Podés agregar hasta dos URLs por link por si uno falla.
+    </p>
+    <div id="usefulLinksList"></div>
+  </div>
+</section>
+
 <section class="page-sec" id="sec-admin-superusers">
   <div class="sec-header">
     <div class="sec-title"><i class="fas fa-crown" style="color:#e11d48;margin-right:8px;"></i>Gestión de <span style="color:#e11d48;">Usuarios</span></div>
@@ -556,23 +599,32 @@
     <h3>
       <span><i class="fas fa-users"></i> Todos los usuarios</span>
     </h3>
+    <div class="admin-filters" style="margin-bottom:14px;">
+      <input class="filter-search" id="superUsersFilterSearch" placeholder="Buscar por email, nick o rol..." oninput="renderSuperUsers()" style="flex:2;min-width:180px;"/>
+      <select class="filter-select" id="superUsersFilterRole" onchange="renderSuperUsers()">
+        <option value="">Todos los roles</option>
+        <option value="cliente">Clientes</option>
+        <option value="admin">Admin</option>
+        <option value="owner">Owner</option>
+        <option value="superadmin">Superadmin</option>
+        <option value="instructor">Instructor</option>
+      </select>
+    </div>
     <div style="overflow-x:auto;">
-      <table class="admin-table">
-        <thead>
-          <tr>
-            <th>Usuario</th>
-            <th>Rol</th>
-            <th>Registrado</th>
-            <th>Último acceso</th>
-            <th>Estado</th>
-            <th>Cambiar rol</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="superUsersBody">
-          <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted);">Cargando...</td></tr>
-        </tbody>
+      <p style="font-family:'Fraunces',serif;font-size:.82rem;font-weight:700;color:#e11d48;margin-bottom:8px;"><i class="fas fa-shield-alt" style="margin-right:6px;"></i>Roles especiales (staff)</p>
+      <div style="overflow-x:auto;">
+      <table class="admin-table" id="superUsersStaffTable">
+        <thead><tr><th>Usuario</th><th>Rol</th><th>Registrado</th><th>Último acceso</th><th>Estado</th><th>Cambiar rol</th><th>Acciones</th></tr></thead>
+        <tbody id="superUsersStaffBody"><tr><td colspan="7" style="text-align:center;padding:16px;color:var(--muted);">Cargando...</td></tr></tbody>
       </table>
+      </div>
+      <p style="font-family:'Fraunces',serif;font-size:.82rem;font-weight:700;color:var(--primary);margin:16px 0 8px;"><i class="fas fa-users" style="margin-right:6px;"></i>Clientes</p>
+      <div style="overflow-x:auto;">
+      <table class="admin-table" id="superUsersClientTable">
+        <thead><tr><th>Usuario</th><th>Rol</th><th>Registrado</th><th>Último acceso</th><th>Estado</th><th>Cambiar rol</th><th>Acciones</th></tr></thead>
+        <tbody id="superUsersBody"><tr><td colspan="7" style="text-align:center;padding:16px;color:var(--muted);">Cargando...</td></tr></tbody>
+      </table>
+      </div>
     </div>
   </div>
 </section>
@@ -586,6 +638,17 @@
     <h3><i class="fas fa-info-circle"></i> ¿Qué puede hacer cada rol?</h3>
     <p style="font-size:.82rem;color:var(--muted);margin-bottom:18px;">Los roles determinan qué puede ver y hacer cada usuario en la plataforma. El color de cada rol en el panel indica su nivel de acceso.</p>
     <div id="rolesGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+  </div>
+
+  <div class="admin-block" style="margin-top:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+      <h3 style="margin:0;"><i class="fas fa-sliders-h" style="color:#e11d48;margin-right:8px;"></i>Permisos del Sidebar por Rol</h3>
+      <button class="action-btn" onclick="resetRolePerms()" style="border-color:rgba(248,113,113,.3);color:var(--red);padding:6px 12px;font-size:.75rem;">
+        <i class="fas fa-undo"></i> Resetear permisos
+      </button>
+    </div>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Activá o desactivá qué ítems del sidebar puede ver cada rol. Los cambios son inmediatos.</p>
+    <div id="rolePermsTable"></div>
   </div>
 </section>
 
@@ -768,6 +831,124 @@
 </section>
 
 
+
+<!-- ═══ PAGE BACKGROUND EDITOR MODAL ═══ -->
+<div class="modal-overlay" id="pgBgModal">
+  <div class="modal" style="width:min(600px,96vw);max-height:92vh;overflow-y:auto;">
+    <button class="modal-close" onclick="document.getElementById('pgBgModal').classList.remove('open')"><i class="fas fa-times"></i></button>
+    <h3><i class="fas fa-fill-drip" style="color:#a78bfa;"></i> Fondo de Página</h3>
+
+    <div class="form-group">
+      <label class="form-label">Tipo de fondo</label>
+      <select class="form-select" id="pgBgType" onchange="_togglePgBgFields()">
+        <option value="none">Sin fondo (predeterminado del tema)</option>
+        <option value="color">Color sólido</option>
+        <option value="gradient">Degradado de colores</option>
+        <option value="scroll">Imagen (scroll normal)</option>
+        <option value="parallax">Imagen (efecto parallax / fija)</option>
+        <option value="fixed">Imagen fija (no se mueve)</option>
+        <option value="tile">Imagen en mosaico (se repite)</option>
+      </select>
+    </div>
+
+    <div id="pgBgColorRow" class="form-group" style="display:none;">
+      <label class="form-label">Color de fondo</label>
+      <input type="color" class="form-input" id="pgBgColor" value="#0a0d1a" style="height:42px;cursor:pointer;"/>
+    </div>
+
+    <div id="pgBgGradRow" style="display:none;">
+      <div class="form-group">
+        <label class="form-label">Dirección</label>
+        <select class="form-select" id="pgBgGradDir">
+          <option value="tb">Arriba → Abajo</option>
+          <option value="bt">Abajo → Arriba</option>
+          <option value="lr">Izquierda → Derecha</option>
+          <option value="rl">Derecha → Izquierda</option>
+        </select>
+      </div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Color 1</label>
+          <input type="color" class="form-input" id="pgBgColor1" value="#0a0d1a" style="height:42px;cursor:pointer;"/></div>
+        <div class="form-group"><label class="form-label">Color 2</label>
+          <input type="color" class="form-input" id="pgBgColor2" value="#1a2540" style="height:42px;cursor:pointer;"/></div>
+      </div>
+    </div>
+
+    <div id="pgBgImgRow" class="form-group" style="display:none;">
+      <label class="form-label">URL de la imagen de fondo</label>
+      <input class="form-input" id="pgBgImgUrl" placeholder="https://...imagen.jpg"/>
+      <label style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:.82rem;cursor:pointer;">
+        <input type="checkbox" id="pgBgRepeat" style="accent-color:var(--primary);"/>
+        Repetir imagen en mosaico si es pequeña
+      </label>
+    </div>
+
+    <div id="pgBgImgEffects" style="display:none;">
+      <div class="form-group">
+        <label class="form-label">Sombra / overlay — Color y opacidad <span id="pgBgOverlayOpVal" style="color:var(--primary);font-weight:700;">0%</span></label>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+          <input type="color" id="pgBgOverlayColor" value="#000000" style="width:36px;height:36px;border:1px solid var(--border2);border-radius:6px;cursor:pointer;"/>
+          <input type="range" id="pgBgOverlayOp" min="0" max="0.95" step="0.05" value="0" style="flex:1;accent-color:var(--primary);"
+            oninput="document.getElementById('pgBgOverlayOpVal').textContent=Math.round(this.value*100)+'%'"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Desenfoque (blur) <span id="pgBgBlurVal" style="color:var(--primary);font-weight:700;">0px</span></label>
+        <input type="range" id="pgBgBlur" min="0" max="20" step="1" value="0" style="width:100%;accent-color:var(--primary);"
+          oninput="document.getElementById('pgBgBlurVal').textContent=this.value+'px'"/>
+      </div>
+    </div>
+
+    <!-- Templates -->
+    <div style="border-top:1px solid var(--border);margin:16px 0 10px;padding-top:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-family:'Fraunces',serif;font-size:.8rem;font-weight:700;color:var(--text);">Plantillas guardadas</div>
+        <button class="action-btn" onclick="saveBgAsTemplate()" style="padding:5px 12px;font-size:.75rem;border-color:rgba(52,211,153,.3);color:var(--green);">
+          <i class="fas fa-save"></i> Guardar esta configuración como plantilla
+        </button>
+      </div>
+      <div id="pgBgTemplatesList"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="document.getElementById('pgBgModal').classList.remove('open')">Cancelar</button>
+      <button class="btn-primary" style="background:linear-gradient(135deg,#6d28d9,#a78bfa);" onclick="savePageBgEditor()">
+        <i class="fas fa-check"></i> Aplicar fondo
+      </button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══ USEFUL LINK MODAL ═══ -->
+<div class="modal-overlay" id="usefulLinkModal">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('usefulLinkModal').classList.remove('open')"><i class="fas fa-times"></i></button>
+    <h3 id="ulModalTitle"><i class="fas fa-bookmark" style="color:#e11d48;"></i> Agregar link</h3>
+    <input type="hidden" id="ulEditIdx" value="-1"/>
+    <div class="form-group">
+      <label class="form-label">Nombre del link</label>
+      <input class="form-input" id="ulName" placeholder="Ej: Google Drive, Canva, Hotmart..."/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tipo de página <span style="color:var(--muted);font-size:.75rem;">(ej: edición de video, diseño gráfico, almacenamiento, cursos...)</span></label>
+      <input class="form-input" id="ulType" placeholder="Ej: Edición de video, Diseño gráfico, Google Drive..."/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">URL principal</label>
+      <input class="form-input" id="ulUrl1" placeholder="https://..."/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">URL alternativa <span style="color:var(--muted);font-size:.75rem;">(opcional, por si el principal falla)</span></label>
+      <input class="form-input" id="ulUrl2" placeholder="https://... (alternativo)"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="document.getElementById('usefulLinkModal').classList.remove('open')">Cancelar</button>
+      <button class="btn-primary" onclick="saveUsefulLink()"><i class="fas fa-check"></i> Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══ BACKGROUND EDITOR MODAL ═══ -->
 <div class="modal-overlay" id="bgEditorModal">
   <div class="modal">
@@ -823,12 +1004,18 @@
     </div>
 
     <div id="bgEdEffectsRow" style="display:none;">
-      <div class="form-group" style="display:flex;flex-direction:column;gap:10px;">
-        <label class="form-label">Efectos</label>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;">
-          <input type="checkbox" id="bgEdBlur" style="accent-color:var(--primary);width:16px;height:16px;"/>
-          Blur de 8px en el fondo
-        </label>
+      <div class="form-group">
+        <label class="form-label">Overlay — Color de sombra <span id="bgEdOverlayOpVal" style="color:var(--primary);font-weight:700;">35%</span></label>
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px;">
+          <input type="color" id="bgEdOverlayColor" value="#000000" style="width:36px;height:36px;border:1px solid var(--border2);border-radius:6px;cursor:pointer;"/>
+          <input type="range" id="bgEdOverlayOp" min="0" max="0.95" step="0.05" value="0.35" style="flex:1;accent-color:var(--primary);"
+            oninput="document.getElementById('bgEdOverlayOpVal').textContent=Math.round(this.value*100)+'%'"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Desenfoque (blur) <span id="bgEdBlurVal" style="color:var(--primary);font-weight:700;">0px</span></label>
+        <input type="range" id="bgEdBlur" min="0" max="20" step="1" value="0" style="width:100%;accent-color:var(--primary);"
+          oninput="document.getElementById('bgEdBlurVal').textContent=this.value+'px'"/>
       </div>
     </div>
 

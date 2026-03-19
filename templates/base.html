@@ -140,6 +140,11 @@ body.dark-mode .sb-btn:hover{background:rgba(255,255,255,.03);}
 .sb-icon{font-size:.85rem;min-width:18px;}
 .sb-contacto-btn{border-top:1px solid var(--border);margin-top:auto;}
 
+/* ══ TOOLTIPS ══ */
+[title]{position:relative;}
+/* Native title tooltips show on hover automatically - enhanced via CSS */
+.action-btn[title]:hover::after{content:attr(title);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:rgba(10,13,26,.92);color:#fff;font-size:.65rem;white-space:nowrap;padding:4px 8px;border-radius:6px;pointer-events:none;z-index:9999;font-family:'Plus Jakarta Sans',sans-serif;font-weight:500;}
+.action-btn[title]:hover::before{content:'';position:absolute;bottom:calc(100% + 1px);left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:rgba(10,13,26,.92);pointer-events:none;z-index:9999;}
 /* ══ FILTER SELECTS ══ */
 .filter-select{background:var(--panel2);border:1px solid var(--border2);border-radius:8px;padding:7px 12px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:.82rem;outline:none;transition:border-color .2s;}
 .filter-select:focus{border-color:var(--primary);}
@@ -159,6 +164,14 @@ body.dark-mode .sb-btn:hover{background:rgba(255,255,255,.03);}
 .editor-block-btn{background:var(--panel);border:1px solid var(--border2);border-radius:6px;width:24px;height:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.65rem;color:var(--muted);transition:all .2s;}
 .editor-block-btn:hover{border-color:var(--primary);color:var(--primary);}
 .editor-block-btn.del:hover{border-color:var(--red);color:var(--red);}
+/* ══ LAYOUT OPTION CARDS ══ */
+.layout-opt:hover{border-color:var(--primary)!important;background:rgba(62,166,255,.06)!important;transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.12);}
+/* ══ SECTION EDITOR — modal style ══ */
+.section-editor-overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9100;display:none;align-items:flex-start;justify-content:center;backdrop-filter:blur(6px);overflow-y:auto;padding:20px;}
+.section-editor-overlay.open{display:flex;}
+.section-editor-box{background:var(--panel);border:1px solid var(--border2);border-radius:18px;width:min(780px,96vw);max-height:calc(100vh - 40px);display:flex;flex-direction:column;box-shadow:0 30px 90px rgba(0,0,0,.6);overflow:hidden;}
+.section-editor-header{background:var(--panel);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0;}
+.section-editor-canvas{flex:1;overflow-y:auto;padding:20px;}
 /* ══ USER DROPDOWN MINI MENU ══ */
 .user-pill{position:relative;cursor:pointer;}
 .user-dropdown{position:absolute;top:calc(100% + 8px);right:0;background:var(--panel);border:1px solid var(--border2);border-radius:12px;padding:6px;min-width:160px;box-shadow:0 12px 32px rgba(0,0,0,.2);z-index:300;display:none;}
@@ -611,6 +624,7 @@ body.dark-mode .social-admin-row{background:rgba(255,255,255,.02);}
         <button class="add-block-btn" onclick="addBlock('testimonio')"><i class="fas fa-quote-right"></i> Testimonio</button>
         <button class="add-block-btn" onclick="addBlock('imagen')"><i class="fas fa-image"></i> Imagen</button>
         <button class="add-block-btn" onclick="addBlock('seccion')" style="border-color:rgba(255,140,66,.3);color:#ff8c42;"><i class="fas fa-heading"></i> Título Sección</button>
+        <button class="add-block-btn" onclick="addBlock('layout-section')" style="border-color:rgba(167,139,250,.3);color:#a78bfa;"><i class="fas fa-th-large"></i> Sección personalizada</button>
       </div>
     </div>
     <div class="modal-actions">
@@ -1005,8 +1019,17 @@ let builderBlocks = [];
 let bannerIdx = 0;
 let bannerTimer = null;
 let allCoursesPage = 1;
-let allCoursesPerPage = 8; // 4 cols × 2 rows = always complete
+let allCoursesPerPage = 8;
 let allCoursesFiltered = [];
+// Admin courses table state
+let adminCoursesPage = 1;
+const ADMIN_COURSES_PER_PAGE = 30;
+let adminCoursesSort = {col:'title', dir:'asc'};
+let adminLinkStatus = {}; // id -> 'ok'|'broken'|'checking'
+// Admin users table state  
+let adminUsersPage = 1;
+const ADMIN_USERS_PER_PAGE = 40;
+let adminUsersSort = {col:'username', dir:'asc'};
 let editingSocialId = null;
 
 // ═══════════════════════ THEME ═══════════════════════
@@ -1027,8 +1050,9 @@ document.addEventListener('click', function(e) {
 });
 
 // ═══════════════════════ PERSISTENCE (localStorage) ═══════════════════════
-const LS_SITE_CONFIG_KEY = 'diartix_site_config';
+const LS_SITE_CONFIG_KEY   = 'diartix_site_config';
 const LS_HOME_SECTIONS_KEY = 'diartix_home_sections';
+const LS_COURSE_HOME_KEY   = 'diartix_course_home'; // featuredHome + masvendidoHome
 
 function resetVisualConfig() {
   if (!confirm('¿Resetear la configuración visual a los valores por defecto?')) return;
@@ -1089,7 +1113,10 @@ function loadConfigFromStorage() {
     const savedSecs = localStorage.getItem(LS_HOME_SECTIONS_KEY);
     if (savedSecs) {
       const parsed = JSON.parse(savedSecs);
-      if (Array.isArray(parsed) && parsed.length > 0) HOME_SECTIONS = parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Filter out removed built-in sections (hs3=banners, hs_motiva)
+        HOME_SECTIONS = parsed.filter(s => s.id !== 'hs3' && s.id !== 'hs_motiva');
+      }
     }
   } catch(e) {}
 }
@@ -1191,7 +1218,9 @@ async function init() {
   renderHomeDynamicSections();
   // Apply footer behavior on load
   applyFooterBehavior(SITE_CONFIG.footerBehavior || 'scroll');
+  _loadCourseHomeFromStorage(); // restore featuredHome/masvendidoHome
   renderFeatured();
+  renderHomeMasVendido();
   renderBannerSlider();
   renderCatExplore();
   renderVideoHeader();
@@ -1214,7 +1243,7 @@ function renderVideoHeader() {
   if (!videoUrl) {
     wrap.innerHTML = `<div class="video-placeholder" onclick="if(currentUser&&currentUser.role==='admin')showAdminInicio()">
       <i class="fas fa-play-circle"></i>
-      <p>${currentUser&&currentUser.role==='admin'?'Clic para configurar el video':'Video de bienvenida'}</p>
+      <p>${currentUser&&(currentUser.role==='admin'||currentUser.role==='superadmin')?'Clic para configurar el banner/video':'Banners o video de bienvenida'}</p>
     </div>`;
     return;
   }
@@ -1815,12 +1844,8 @@ function renderCourseCardSq(course) {
 }
 
 function renderFeatured() {
-  const el = document.getElementById('featuredGrid');
-  if (!el) return;
-  const featured = courses.filter(c=>c.featured&&!c.hidden);
-  el.innerHTML = featured.length
-    ? featured.map(c=>renderCourseCardSq(c)).join('')
-    : '<div class="empty-state" style="padding:30px;"><i class="fas fa-star"></i><p>No hay cursos destacados</p></div>';
+  renderHomeFeatured();
+  renderHomeMasVendido();
   const statEl = document.getElementById('stat-cursos');
   if (statEl) statEl.textContent = courses.filter(c=>!c.hidden).length;
 }
@@ -1986,25 +2011,263 @@ function renderAdminStats() {
 }
 
 function renderAdminTable() {
-  const body=document.getElementById('adminTableBody');
-  const cnt=document.getElementById('adminCursoCount');
-  if(cnt) cnt.textContent=`(${courses.length})`;
-  body.innerHTML=courses.map(c=>{
-    const cat=CATEGORIES.find(ct=>ct.key===c.cat);
-    return `<tr>
-      <td><b>${c.emoji||'📚'} ${c.title}</b>${c.hidden?'<span style="margin-left:8px;font-size:.65rem;color:var(--gold);font-weight:700;">OCULTO</span>':''}</td>
-      <td><span style="padding:3px 10px;border-radius:20px;font-size:.68rem;font-weight:700;" class="${catPillClass(c.cat)}">${cat?cat.name:c.cat}</span></td>
-      <td>${c.featured?'<span style="color:var(--primary);"><i class="fas fa-star"></i></span> ':''}${c.masvendido?'<span style="color:var(--gold);"><i class="fas fa-fire"></i></span>':''}</td>
+  const body = document.getElementById('adminTableBody');
+  const cnt  = document.getElementById('adminCursoCount');
+
+  // Sort courses
+  let list = [...courses];
+  const {col, dir} = adminCoursesSort;
+  list.sort((a,b) => {
+    let va, vb;
+    if (col==='title')   { va=a.title||''; vb=b.title||''; }
+    else if (col==='cat') { va=a.cat||''; vb=b.cat||''; }
+    else if (col==='creator') { va=a.createdBy||''; vb=b.createdBy||''; }
+    else if (col==='created') { va=a.id||0; vb=b.id||0; }
+    else if (col==='link') {
+      const order = {ok:0, checking:1, '':2, broken:3};
+      va = order[adminLinkStatus[a.id]||'']; vb = order[adminLinkStatus[b.id]||''];
+    }
+    else { va=a.title||''; vb=b.title||''; }
+    if (typeof va === 'string') return dir==='asc' ? va.localeCompare(vb) : vb.localeCompare(va);
+    return dir==='asc' ? va-vb : vb-va;
+  });
+
+  // Paginate
+  const total = list.length;
+  const pages = Math.ceil(total / ADMIN_COURSES_PER_PAGE);
+  if (adminCoursesPage > pages) adminCoursesPage = 1;
+  const start = (adminCoursesPage-1)*ADMIN_COURSES_PER_PAGE;
+  const page  = list.slice(start, start+ADMIN_COURSES_PER_PAGE);
+
+  if(cnt) cnt.textContent = `(${total})`;
+
+  // Counts for limits
+  const featuredCount   = courses.filter(c=>c.featuredHome).length;
+  const masVendidoCount = courses.filter(c=>c.masvendidoHome).length;
+  const LIMIT = 8;
+
+  function sortArrow(c) {
+    if (adminCoursesSort.col !== c) return '<i class="fas fa-sort" style="opacity:.3;margin-left:4px;font-size:.6rem;"></i>';
+    return adminCoursesSort.dir==='asc'
+      ? '<i class="fas fa-sort-up" style="color:var(--primary);margin-left:4px;font-size:.6rem;"></i>'
+      : '<i class="fas fa-sort-down" style="color:var(--primary);margin-left:4px;font-size:.6rem;"></i>';
+  }
+  function sortBy(c) {
+    if (adminCoursesSort.col===c) adminCoursesSort.dir = adminCoursesSort.dir==='asc'?'desc':'asc';
+    else adminCoursesSort = {col:c, dir:'asc'};
+    renderAdminTable();
+  }
+
+  // Header
+  const thead = document.querySelector('#adminTableBody')?.closest('table')?.querySelector('thead tr');
+  if (thead) {
+    thead.innerHTML = `
+      <th onclick="sortBy('title')" style="cursor:pointer;user-select:none;font-size:.7rem;">Título${sortArrow('title')}</th>
+      <th onclick="sortBy('cat')" style="cursor:pointer;user-select:none;font-size:.7rem;">Cat.${sortArrow('cat')}</th>
+      <th onclick="sortBy('creator')" style="cursor:pointer;user-select:none;font-size:.7rem;">Creado por${sortArrow('creator')}</th>
+      <th onclick="sortBy('created')" style="cursor:pointer;user-select:none;font-size:.7rem;">Fecha${sortArrow('created')}</th>
+      <th style="font-size:.7rem;">Estado</th>
+      <th onclick="sortBy('link')" style="cursor:pointer;user-select:none;font-size:.7rem;">Link${sortArrow('link')}</th>
+      <th style="font-size:.7rem;">Acciones</th>`;
+  }
+
+  body.innerHTML = page.map(c => {
+    const cat = CATEGORIES.find(ct=>ct.key===c.cat);
+    const ls  = adminLinkStatus[c.id];
+    const linkOk    = ls === 'ok';
+    const linkBroke = ls === 'broken';
+    const linkCheck = ls === 'checking';
+    const rowStyle  = linkBroke ? 'background:rgba(248,113,113,.06);' : '';
+    const brokenBadge = linkBroke ? '<span style="margin-left:6px;font-size:.6rem;color:var(--red);font-weight:700;background:rgba(248,113,113,.12);padding:2px 6px;border-radius:10px;">⚠ REVISAR</span>' : '';
+    const linkCell = linkCheck
+      ? '<span style="color:var(--muted);font-size:.72rem;"><i class="fas fa-spinner fa-spin"></i></span>'
+      : linkBroke
+        ? '<span style="color:var(--red);font-size:.72rem;font-weight:700;"><i class="fas fa-times-circle"></i> Roto</span>'
+        : linkOk
+          ? '<span style="color:var(--green);font-size:.72rem;"><i class="fas fa-check-circle"></i> OK</span>'
+          : '<span style="color:var(--muted);font-size:.72rem;">—</span>';
+    // Dates not stored yet — show ID as proxy
+    const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString('es-AR') : '—';
+    const creator = c.createdBy || 'Admin';
+    // Featured/masvendido limits
+    const canFeatHome = !c.featuredHome && featuredCount   >= LIMIT;
+    const canMVHome   = !c.masvendidoHome && masVendidoCount >= LIMIT;
+
+    return `<tr style="${rowStyle}">
+      <td style="min-width:140px;max-width:200px;">
+        <div style="font-weight:700;font-size:.76rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px;" title="${c.title}">${c.emoji||'📚'} ${c.title}${brokenBadge}</div>
+        ${c.hidden?'<span style="font-size:.58rem;color:var(--gold);font-weight:700;">OCULTO</span>':''}
+      </td>
+      <td style="max-width:110px;"><span style="padding:2px 7px;border-radius:20px;font-size:.62rem;font-weight:700;white-space:nowrap;display:inline-block;max-width:105px;overflow:hidden;text-overflow:ellipsis;" class="${catPillClass(c.cat)}" title="${cat?cat.name:c.cat}">${cat?cat.name:c.cat}</span></td>
+      <td style="font-size:.75rem;color:var(--muted);">${creator}</td>
+      <td style="font-size:.75rem;color:var(--muted);white-space:nowrap;">${dateStr}</td>
+      <td style="font-size:.75rem;">
+        ${c.featured?'<span style="color:var(--primary);"><i class="fas fa-star"></i> Dest.</span> ':''}
+        ${c.masvendido?'<span style="color:var(--gold);"><i class="fas fa-fire"></i> MV</span>':''}
+        ${c.featuredHome?'<span style="color:var(--primary);font-size:.65rem;"><i class="fas fa-home"></i>Dest.Inicio</span> ':''}
+        ${c.masvendidoHome?'<span style="color:var(--gold);font-size:.65rem;"><i class="fas fa-home"></i>MV Inicio</span>':''}
+        ${!c.featured&&!c.masvendido&&!c.featuredHome&&!c.masvendidoHome?'<span style="color:var(--muted2);">Normal</span>':''}
+      </td>
+      <td>${linkCell}</td>
       <td style="white-space:nowrap;">
-        <button class="action-btn" onclick="editCourse(${c.id})"><i class="fas fa-edit"></i> Editar</button>
-        <button class="action-btn" style="border-color:rgba(62,166,255,.3);color:var(--primary);" onclick="showCourseDetail(${c.id})"><i class="fas fa-eye"></i> Ir al curso</button>
-        <button class="action-btn hide-btn ${c.hidden?'hidden-active':''}" onclick="toggleHideCourse(${c.id})">${c.hidden?'<i class="fas fa-eye"></i> Mostrar':'<i class="fas fa-eye-slash"></i> Ocultar'}</button>
-        <button class="action-btn feat-btn ${c.featured?'on':''}" onclick="toggleFeaturedCourse(${c.id})"><i class="fas fa-star"></i></button>
-        <button class="action-btn popular-btn ${c.masvendido?'on':''}" onclick="toggleMasVendidoCourse(${c.id})"><i class="fas fa-fire"></i></button>
-        <button class="action-btn del" onclick="deleteCourse(${c.id})"><i class="fas fa-trash"></i></button>
+        <div style="display:flex;gap:3px;flex-wrap:wrap;">
+          <button class="action-btn" onclick="editCourse(${c.id})" title="Editar curso"><i class="fas fa-edit"></i></button>
+          <button class="action-btn" style="color:var(--primary);" onclick="showCourseDetail(${c.id})" title="Ver curso"><i class="fas fa-eye"></i></button>
+          <button class="action-btn hide-btn ${c.hidden?'hidden-active':''}" onclick="toggleHideCourse(${c.id})" title="${c.hidden?'Mostrar curso':'Ocultar curso'}"><i class="fas ${c.hidden?'fa-eye':'fa-eye-slash'}"></i></button>
+          <button class="action-btn feat-btn ${c.featured?'on':''}" onclick="toggleFeaturedCourse(${c.id})" title="Destacado (sidebar)"><i class="fas fa-star"></i></button>
+          <button class="action-btn popular-btn ${c.masvendido?'on':''}" onclick="toggleMasVendidoCourse(${c.id})" title="Más vendido (sidebar)"><i class="fas fa-fire"></i></button>
+          <button class="action-btn ${c.featuredHome?'feat-btn on':''}" onclick="${canFeatHome?'showToast("Límite de 8 destacados en inicio alcanzado","error")':'toggleFeaturedHome('+c.id+')'}" title="${c.featuredHome?'Quitar de Destacados de Inicio':'Agregar a Destacados de Inicio (máx 8)'}" ${canFeatHome?'style="opacity:.4;cursor:not-allowed;"':''}>
+            <i class="fas fa-home"></i><i class="fas fa-star" style="font-size:.55rem;margin-left:1px;"></i>
+          </button>
+          <button class="action-btn ${c.masvendidoHome?'popular-btn on':''}" onclick="${canMVHome?'showToast("Límite de 8 más vendidos en inicio alcanzado","error")':'toggleMasVendidoHome('+c.id+')'}" title="${c.masvendidoHome?'Quitar de Más Vendidos de Inicio':'Agregar a Más Vendidos de Inicio (máx 8)'}" ${canMVHome?'style="opacity:.4;cursor:not-allowed;"':''}>
+            <i class="fas fa-home"></i><i class="fas fa-fire" style="font-size:.55rem;margin-left:1px;"></i>
+          </button>
+          <button class="action-btn" onclick="checkCourseLink(${c.id})" title="Revisar link de compra" style="border-color:rgba(167,139,250,.3);color:#a78bfa;"><i class="fas fa-link"></i></button>
+          <button class="action-btn del" onclick="deleteCourse(${c.id})" title="Eliminar curso"><i class="fas fa-trash"></i></button>
+        </div>
       </td>
     </tr>`;
   }).join('');
+
+  // Pagination
+  renderAdminTablePagination(pages, total);
+}
+
+function renderAdminTablePagination(pages, total) {
+  let pag = document.getElementById('adminCursosPagination');
+  if (!pag) return;
+  if (pages <= 1) { pag.innerHTML = ''; return; }
+  const p = adminCoursesPage;
+  let html = `<div style="display:flex;gap:6px;align-items:center;justify-content:center;margin-top:16px;flex-wrap:wrap;">
+    <span style="font-size:.75rem;color:var(--muted);">Mostrando página ${p} de ${pages} (${total} cursos)</span>
+    <button class="pg-btn" ${p===1?'disabled':''} onclick="adminCoursesPage=${p-1};renderAdminTable()"><i class="fas fa-chevron-left"></i></button>`;
+  for (let i=1; i<=pages; i++) {
+    if (i===1||i===pages||Math.abs(i-p)<=1) html+=`<button class="pg-btn ${i===p?'active':''}" onclick="adminCoursesPage=${i};renderAdminTable()">${i}</button>`;
+    else if (Math.abs(i-p)===2) html+='<span class="pg-ellipsis">…</span>';
+  }
+  html += `<button class="pg-btn" ${p===pages?'disabled':''} onclick="adminCoursesPage=${p+1};renderAdminTable()"><i class="fas fa-chevron-right"></i></button></div>`;
+  pag.innerHTML = html;
+}
+
+// ── Featured Home / MasVendido Home toggles (max 8) ──
+function _saveCourseHomeToStorage() {
+  try {
+    const data = {};
+    courses.forEach(c => {
+      if (c.featuredHome || c.masvendidoHome) {
+        data[c.id] = {fH: !!c.featuredHome, mH: !!c.masvendidoHome};
+      }
+    });
+    localStorage.setItem(LS_COURSE_HOME_KEY, JSON.stringify(data));
+  } catch(e) {}
+}
+
+function _loadCourseHomeFromStorage() {
+  try {
+    const saved = localStorage.getItem(LS_COURSE_HOME_KEY);
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    courses.forEach(c => {
+      if (data[c.id]) {
+        c.featuredHome   = !!data[c.id].fH;
+        c.masvendidoHome = !!data[c.id].mH;
+      }
+    });
+  } catch(e) {}
+}
+
+function toggleFeaturedHome(id) {
+  const c = courses.find(x=>x.id===id); if(!c) return;
+  const count = courses.filter(x=>x.featuredHome).length;
+  if (!c.featuredHome && count >= 8) { showToast('Límite de 8 Destacados de Inicio alcanzado','error'); return; }
+  c.featuredHome = !c.featuredHome;
+  _saveCourseHomeToStorage();
+  renderAdminTable(); renderHomeFeatured(); renderHomeMasVendido();
+  showToast(c.featuredHome?'Agregado a Destacados de Inicio ✓':'Quitado de Destacados de Inicio','success');
+}
+function toggleMasVendidoHome(id) {
+  const c = courses.find(x=>x.id===id); if(!c) return;
+  const count = courses.filter(x=>x.masvendidoHome).length;
+  if (!c.masvendidoHome && count >= 8) { showToast('Límite de 8 Más Vendidos de Inicio alcanzado','error'); return; }
+  c.masvendidoHome = !c.masvendidoHome;
+  _saveCourseHomeToStorage();
+  renderAdminTable(); renderHomeFeatured(); renderHomeMasVendido();
+  showToast(c.masvendidoHome?'Agregado a Más Vendidos de Inicio ✓':'Quitado de Más Vendidos de Inicio','success');
+}
+
+// ── Link checker ──
+async function checkCourseLink(id) {
+  const c = courses.find(x=>x.id===id); if(!c||!c.buyUrl) {
+    showToast('Este curso no tiene link de compra','error'); return;
+  }
+  adminLinkStatus[id] = 'checking';
+  renderAdminTable();
+  try {
+    // Use no-cors fetch — if it doesn't throw, URL is reachable
+    await fetch(c.buyUrl, {method:'HEAD', mode:'no-cors', cache:'no-cache'});
+    adminLinkStatus[id] = 'ok';
+    showToast('✓ Link funcionando','success');
+  } catch(e) {
+    adminLinkStatus[id] = 'broken';
+    showToast('⚠ Link no responde — revisá en Hotmart','error');
+  }
+  renderAdminTable();
+}
+
+async function checkAllLinks() {
+  const withUrl = courses.filter(c=>c.buyUrl&&!c.hidden);
+  showToast(`Revisando ${withUrl.length} links...`,'success');
+  for (const c of withUrl) {
+    adminLinkStatus[c.id] = 'checking';
+  }
+  renderAdminTable();
+  for (const c of withUrl) {
+    try {
+      await fetch(c.buyUrl, {method:'HEAD', mode:'no-cors', cache:'no-cache'});
+      adminLinkStatus[c.id] = 'ok';
+    } catch(e) {
+      adminLinkStatus[c.id] = 'broken';
+    }
+    renderAdminTable();
+    await new Promise(r=>setTimeout(r,300)); // throttle
+  }
+  const broken = courses.filter(c=>adminLinkStatus[c.id]==='broken').length;
+  showToast(`Revisión completa. ${broken} links con problemas.`, broken>0?'error':'success');
+}
+
+async function hideAllBroken() {
+  const broken = courses.filter(c=>adminLinkStatus[c.id]==='broken'&&!c.hidden);
+  if (!broken.length) { showToast('No hay links rotos para ocultar','error'); return; }
+  if (!confirm(`¿Ocultar ${broken.length} cursos con links no funcionando?`)) return;
+  for (const c of broken) {
+    try { await apiFetch(`${API.cursos}${c.slug}/`,{method:'PATCH',body:JSON.stringify({oculto:true})}); } catch(e){}
+    c.hidden = true;
+  }
+  renderAdminTable(); renderFeatured(); renderCatExplore();
+  showToast(`${broken.length} cursos ocultados ✓`,'success');
+}
+
+// ── Home inicio sections: Featured and MasVendido ──
+function renderHomeFeatured() {
+  const el = document.getElementById('featuredGrid');
+  if (!el) return;
+  const list = courses.filter(c=>c.featuredHome&&!c.hidden);
+  // Fallback to c.featured if no featuredHome set
+  const fallback = courses.filter(c=>c.featured&&!c.hidden&&!c.featuredHome);
+  const display = list.length ? list : fallback;
+  el.innerHTML = display.length
+    ? display.slice(0,8).map(c=>renderCourseCardSq(c)).join('')
+    : '<div class="empty-state" style="padding:30px;"><i class="fas fa-star"></i><p>No hay cursos destacados de inicio</p></div>';
+}
+
+function renderHomeMasVendido() {
+  const el  = document.getElementById('masVendidoHomeGrid');
+  const sec = document.getElementById('masVendidoHomeSection');
+  if (!el) return;
+  const list = courses.filter(c=>c.masvendidoHome&&!c.hidden);
+  if (!list.length) { if(sec) sec.style.display='none'; return; }
+  if(sec) sec.style.display='';
+  el.innerHTML = list.slice(0,8).map(c=>renderCourseCardSq(c)).join('');
 }
 
 async function toggleHideCourse(id) {
@@ -2256,10 +2519,83 @@ async function editCourse(id) {
 function addBlock(type) {
   if (type==='descripcion') builderBlocks.push({type, text:''});
   else if (type==='temario') builderBlocks.push({type, items:[]});
-  else if (type==='testimonio') builderBlocks.push({type, text:'', author:'', stars:5});
+  else if (type==='testimonio') {
+    // Find existing testimonio-group or create one
+    const grpIdx = builderBlocks.findIndex(b=>b.type==='testimonio-group');
+    if (grpIdx >= 0) {
+      builderBlocks[grpIdx].testimonials.push({text:'', author:'', stars:5});
+    } else {
+      builderBlocks.push({type:'testimonio-group', testimonials:[{text:'', author:'', stars:5}]});
+    }
+  }
   else if (type==='imagen') builderBlocks.push({type, url:''});
   else if (type==='seccion') builderBlocks.push({type, titulo:'Nueva Sección'});
+  else if (type==='layout-section') openLayoutPickerForCourse();
   renderBuilderBlocks();
+}
+
+function openLayoutPickerForCourse() {
+  window._layoutPickerMode = 'course';
+  const el = document.getElementById('addSectionModalGrid');
+  if (el) el.innerHTML = LAYOUT_OPTIONS.map(opt=>`
+    <div class="layout-opt" onclick="selectLayoutOpt('${opt.id}')" id="lopt-${opt.id}"
+      style="background:var(--panel2);border:2px solid var(--border2);border-radius:12px;padding:12px;cursor:pointer;transition:all .2s;text-align:center;">
+      <div style="margin-bottom:8px;">${LAYOUT_PREVIEWS[opt.id]||''}</div>
+      <div style="font-family:'Fraunces',serif;font-size:.78rem;font-weight:800;color:var(--text);margin-bottom:3px;">${opt.label}</div>
+    </div>`).join('');
+  selectedLayoutOpt = null;
+  document.getElementById('newSecName').value = '';
+  // Bump z-index so it appears above courseModal
+  const modal = document.getElementById('addSectionModal');
+  modal.style.zIndex = '9500';
+  modal.classList.add('open');
+}
+
+// Intercept confirmAddSection for course mode
+const _origConfirmAddSection = typeof confirmAddSection === 'function' ? confirmAddSection : null;
+function confirmAddSection() {
+  if (window._layoutPickerMode === 'course') {
+    window._layoutPickerMode = null;
+    const name = document.getElementById('newSecName').value.trim();
+    if (!name) { showToast('Escribí un nombre','error'); return; }
+    if (!selectedLayoutOpt) { showToast('Elegí un tipo de diseño','error'); return; }
+    const opt = LAYOUT_OPTIONS.find(o=>o.id===selectedLayoutOpt);
+    builderBlocks.push({
+      type:'layout-section',
+      layoutType: selectedLayoutOpt,
+      layoutLabel: opt?.label||selectedLayoutOpt,
+      title: name,
+      blocks: _buildDefaultBlocks(selectedLayoutOpt),
+      background: {},
+      showTitle: true,
+      _sectionId: 'cs'+Date.now(),
+    });
+    // Close and reset z-index
+    const modal = document.getElementById('addSectionModal');
+    modal.classList.remove('open');
+    modal.style.zIndex = '';
+    renderBuilderBlocks();
+    showToast('Sección "'+name+'" agregada al curso ✓','success');
+    return;
+  }
+  // Normal mode
+  const name = document.getElementById('newSecName').value.trim();
+  if (!name) { showToast('Escribí un nombre para la sección','error'); return; }
+  if (!selectedLayoutOpt) { showToast('Elegí un tipo de sección','error'); return; }
+  const opt = LAYOUT_OPTIONS.find(o=>o.id===selectedLayoutOpt);
+  const newSec = {
+    id:'hs'+Date.now(), type:'layout', layoutType:selectedLayoutOpt,
+    layoutLabel:opt?.label||selectedLayoutOpt, title:name, displayTitle:name,
+    showTitle:true, titleStyle:{font:'fraunces',size:'1.3rem',color:'',bold:true},
+    visible:true, locked:false, blocks:_buildDefaultBlocks(selectedLayoutOpt),
+    carouselItems:[], carouselInterval:5, bannerHeight:'220px', bannerUrl:'',
+  };
+  HOME_SECTIONS.push(newSec);
+  renderHomeSectionsList();
+  saveHomeSectionsToStorage();
+  const _m=document.getElementById('addSectionModal');
+  _m.classList.remove('open'); _m.style.zIndex='';
+  showToast('Sección "'+name+'" creada. Bajá a Panel Inicio para editarla.','success');
 }
 function removeBlock(i) { builderBlocks.splice(i,1); renderBuilderBlocks(); }
 function moveBlock(i, dir) {
@@ -2291,11 +2627,40 @@ function renderBuilderBlocks() {
     } else if (b.type === 'seccion') {
       inner = `<input class="form-input" placeholder="Título de la sección (ej: Sobre este curso)" value="${(b.titulo||'').replace(/"/g,'&quot;')}" oninput="builderBlocks[${i}].titulo=this.value"/>
                <div class="form-hint">Este título aparece como encabezado separador en la página del curso</div>`;
+    } else if (b.type === 'testimonio-group') {
+      const grp = b.testimonials || [];
+      inner = `<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:8px;">
+        ${grp.map((t,j)=>`<div style="background:var(--panel);border:1px solid var(--border2);border-radius:8px;padding:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="font-size:.7rem;color:var(--muted);font-weight:600;">Testimonio ${j+1}</span>
+            <button style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.8rem;" onclick="builderBlocks[${i}].testimonials.splice(${j},1);renderBuilderBlocks()"><i class="fas fa-times"></i></button>
+          </div>
+          <input class="form-input" style="margin-bottom:6px;font-size:.82rem;" placeholder="Texto del testimonio" value="${t.text||''}" oninput="builderBlocks[${i}].testimonials[${j}].text=this.value"/>
+          <input class="form-input" style="margin-bottom:6px;font-size:.82rem;" placeholder="Autor (Ej: Laura G.)" value="${t.author||''}" oninput="builderBlocks[${i}].testimonials[${j}].author=this.value"/>
+          <select class="form-select" style="font-size:.82rem;" onchange="builderBlocks[${i}].testimonials[${j}].stars=parseInt(this.value)">
+            ${[5,4,3,2,1].map(s=>`<option value="${s}" ${(t.stars||5)===s?'selected':''}>${s} ⭐</option>`).join('')}
+          </select>
+        </div>`).join('')}
+      </div>
+      <button class="add-block-btn" onclick="builderBlocks[${i}].testimonials.push({text:'',author:'',stars:5});renderBuilderBlocks()" style="font-size:.75rem;">
+        <i class="fas fa-plus"></i> Agregar testimonio
+      </button>`;
+    } else if (b.type === 'layout-section') {
+      inner = `<div style="background:var(--panel);border:1px solid var(--border2);border-radius:8px;padding:10px;">
+        <div style="font-size:.75rem;color:var(--muted);margin-bottom:8px;">Tipo: <b>${b.layoutLabel||b.layoutType}</b> | Bloques: ${(b.blocks||[]).length}</div>
+        <div style="display:flex;gap:6px;">
+          <button class="action-btn" onclick="openCourseBlockEditor(${i})" style="border-color:rgba(62,166,255,.3);color:var(--primary);padding:5px 10px;font-size:.75rem;"><i class="fas fa-pen"></i> Editar contenido</button>
+          <button class="action-btn" onclick="openCourseBlockBg(${i})" style="border-color:rgba(167,139,250,.3);color:#a78bfa;padding:5px 10px;font-size:.75rem;"><i class="fas fa-fill-drip"></i> Fondo</button>
+        </div>
+      </div>`;
     }
-    return `<div class="builder-block" style="border-left:3px solid ${colors[b.type]||'var(--primary)'};">
+    const blockColor = colors[b.type] || (b.type==='testimonio-group'?'#f0c060':b.type==='layout-section'?'#a78bfa':'var(--primary)');
+    const blockIcon  = icons[b.type]  || (b.type==='testimonio-group'?'fa-quote-right':b.type==='layout-section'?'fa-th':'fa-circle');
+    const blockName  = names[b.type]  || (b.type==='testimonio-group'?'Testimonios':b.type==='layout-section'?b.title||'Sección':'Bloque');
+    return `<div class="builder-block" style="border-left:3px solid ${blockColor};">
       <div class="builder-block-header">
-        <span class="builder-block-type" style="color:${colors[b.type]||'var(--primary)'};">
-          <i class="fas ${icons[b.type]}"></i> ${names[b.type]}
+        <span class="builder-block-type" style="color:${blockColor};">
+          <i class="fas ${blockIcon}"></i> ${blockName}
         </span>
         <div style="display:flex;gap:4px;align-items:center;">
           <button style="background:none;border:1px solid var(--border2);color:var(--muted);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:.75rem;display:flex;align-items:center;justify-content:center;" onclick="moveBlock(${i},-1)" title="Mover arriba" ${i===0?'disabled':''}>▲</button>
@@ -2306,6 +2671,52 @@ function renderBuilderBlocks() {
       ${inner}
     </div>`;
   }).join('');
+}
+
+// Open section editor for a course layout block
+function openCourseBlockEditor(blockIdx) {
+  const b = builderBlocks[blockIdx];
+  if (!b || b.type !== 'layout-section') return;
+  // Create a temp HOME_SECTION proxy for the editor
+  const tempSec = {
+    id: b._sectionId || 'cs'+blockIdx,
+    layoutType: b.layoutType,
+    blocks: b.blocks || [],
+    background: b.background || {},
+    _splitPct: b._splitPct,
+    title: b.title,
+  };
+  // Save reference
+  window._courseBlockIdx = blockIdx;
+  window._courseBlockEditMode = true;
+  editorTargetSectionId = tempSec.id;
+  editorBlocks = JSON.parse(JSON.stringify(tempSec.blocks));
+  document.getElementById('sectionEditorTitle').textContent = 'Editando bloque — '+b.title;
+  document.getElementById('sectionEditorTitleText').value = b.title||'';
+  document.getElementById('sectionEditorShowTitle').checked = b.showTitle!==false;
+  renderLayoutEditor(tempSec);
+  document.getElementById('sectionEditorOverlay').classList.add('open');
+}
+
+function openCourseBlockBg(blockIdx) {
+  window._courseBlockIdx = blockIdx;
+  window._bgIsCourseBlock = true;
+  _bgTargetId = 'course-block-'+blockIdx;
+  const b = builderBlocks[blockIdx];
+  const bg = b?.background || {};
+  document.getElementById('bgEdType').value      = bg.type      || 'none';
+  document.getElementById('bgEdImgUrl').value    = bg.imgUrl    || '';
+  document.getElementById('bgEdOverlay').value   = bg.overlay   || 'none';
+  document.getElementById('bgEdGradDir').value   = bg.gradDir   || 'lr';
+  document.getElementById('bgEdColor1').value    = bg.color1    || '#ff8c42';
+  document.getElementById('bgEdColor2').value    = bg.color2    || '#3ea6ff';
+  document.getElementById('bgEdBlur').checked    = !!bg.blur;
+  document.getElementById('bgEdFullWidth').checked = bg.fullWidth !== false;
+  document.getElementById('bgEdCorners').value   = bg.corners   || 'square';
+  document.getElementById('bgEdOpacity').value   = bg.opacity != null ? bg.opacity : 1;
+  document.getElementById('bgEdOpacityVal').textContent = Math.round((bg.opacity!=null?bg.opacity:1)*100)+'%';
+  _toggleBgFields();
+  document.getElementById('bgEditorModal').classList.add('open');
 }
 
 async function saveCourse() {
@@ -2507,11 +2918,22 @@ let editorDragIdx = null;
 function openSectionEditor(sectionId, sectionName) {
   editorTargetSectionId = sectionId;
   const sec = HOME_SECTIONS.find(s=>s.id===sectionId);
-  editorBlocks = sec?.blocks ? JSON.parse(JSON.stringify(sec.blocks)) : [];
-  document.getElementById('sectionEditorTitle').textContent = 'Editor — ' + (sectionName||'Sección');
-  document.getElementById('sectionEditorTitleText').value = sec?.displayTitle || '';
-  document.getElementById('sectionEditorShowTitle').checked = sec?.showTitle !== false;
-  renderEditorBlocks();
+  if (!sec) return;
+  editorBlocks = sec.blocks ? JSON.parse(JSON.stringify(sec.blocks)) : [];
+
+  document.getElementById('sectionEditorTitle').textContent = 'Editando — ' + (sec.title||sectionName||'Sección');
+  document.getElementById('sectionEditorTitleText').value = sec.displayTitle || '';
+  document.getElementById('sectionEditorShowTitle').checked = sec.showTitle !== false;
+
+  // Title style controls
+  const ts = sec.titleStyle || {};
+  const tFont = document.getElementById('secEdTitleFont'); if(tFont) tFont.value = ts.font||'fraunces';
+  const tSize = document.getElementById('secEdTitleSize'); if(tSize) tSize.value = ts.size||'1.3rem';
+  const tColor= document.getElementById('secEdTitleColor');if(tColor) tColor.value = ts.color||'#1a2540';
+  const tBold = document.getElementById('secEdTitleBold'); if(tBold) tBold.checked = ts.bold!==false;
+
+  // Build layout-aware editor body
+  renderLayoutEditor(sec);
   document.getElementById('sectionEditorOverlay').classList.add('open');
 }
 
@@ -2520,16 +2942,394 @@ function closeSectionEditor() {
 }
 
 function saveSectionEditor() {
-  const sec = HOME_SECTIONS.find(s=>s.id===editorTargetSectionId);
-  if (sec) {
-    sec.blocks = JSON.parse(JSON.stringify(editorBlocks));
-    sec.displayTitle = document.getElementById('sectionEditorTitleText').value;
-    sec.showTitle = document.getElementById('sectionEditorShowTitle').checked;
+  // Course block edit mode
+  if (window._courseBlockEditMode) {
+    window._courseBlockEditMode = false;
+    const idx = window._courseBlockIdx;
+    if (idx != null && builderBlocks[idx]) {
+      builderBlocks[idx].blocks = JSON.parse(JSON.stringify(editorBlocks));
+      builderBlocks[idx].title  = document.getElementById('sectionEditorTitleText').value || builderBlocks[idx].title;
+      builderBlocks[idx].showTitle = document.getElementById('sectionEditorShowTitle').checked;
+    }
+    document.getElementById('sectionEditorOverlay').classList.remove('open');
+    renderBuilderBlocks();
+    showToast('✓ Bloque guardado','success');
+    return;
   }
+  const sec = HOME_SECTIONS.find(s=>s.id===editorTargetSectionId);
+  if (!sec) return;
+  sec.blocks = JSON.parse(JSON.stringify(editorBlocks));
+  sec.displayTitle = document.getElementById('sectionEditorTitleText').value;
+  sec.showTitle    = document.getElementById('sectionEditorShowTitle').checked;
+  sec.titleStyle   = {
+    font:  document.getElementById('secEdTitleFont')?.value  || 'fraunces',
+    size:  document.getElementById('secEdTitleSize')?.value  || '1.3rem',
+    color: document.getElementById('secEdTitleColor')?.value || '',
+    bold:  document.getElementById('secEdTitleBold')?.checked !== false,
+  };
   renderHomeDynamicSections();
   saveHomeSectionsToStorage();
   closeSectionEditor();
-  showToast('Sección guardada ✓ (guardado localmente)','success');
+  showToast('✓ Sección guardada','success');
+}
+
+function renderLayoutEditor(sec) {
+  const cont = document.getElementById('sectionEditorBlocks');
+  if (!cont) return;
+  const lt = sec.layoutType || 'text-center';
+  if (!editorBlocks.length) editorBlocks = _buildDefaultBlocks(lt);
+
+  // ── Helper: resizable split (drag divider between col A and col B) ──
+  const splitId = 'split-' + sec.id;
+  function splitPane(leftHtml, rightHtml, leftPct) {
+    const lp = leftPct || 50;
+    return `<div id="${splitId}" style="display:flex;border:1px solid var(--border);border-radius:12px;overflow:hidden;min-height:200px;">
+      <div id="${splitId}-L" style="width:${lp}%;min-width:20%;overflow:auto;padding:14px;border-right:4px solid var(--border2);box-sizing:border-box;">
+        ${leftHtml}
+      </div>
+      <div id="${splitId}-D" style="width:6px;background:var(--border2);cursor:col-resize;flex-shrink:0;display:flex;align-items:center;justify-content:center;user-select:none;"
+        onmousedown="_startSplit('${splitId}',event)">
+        <div style="width:2px;height:30px;background:var(--muted);border-radius:1px;"></div>
+      </div>
+      <div id="${splitId}-R" style="flex:1;overflow:auto;padding:14px;box-sizing:border-box;">
+        ${rightHtml}
+      </div>
+    </div>`;
+  }
+
+  // ── Editors ──
+  function txtEd(idx, label, placeholder) {
+    const b = editorBlocks[idx] || {type:'text',content:'',align:'left',fontSize:'1rem',bold:false,color:'',fontFamily:'sans'};
+    return `<div>
+      <div style="font-family:'Fraunces',serif;font-size:.72rem;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">${label||'Texto'}</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;">
+        <select onchange="editorBlocks[${idx}].fontFamily=this.value;refreshLayoutPreview()" class="filter-select" style="font-size:.7rem;padding:4px 6px;">
+          <option value="sans" ${b.fontFamily==='sans'?'selected':''}>Sans</option>
+          <option value="fraunces" ${b.fontFamily==='fraunces'?'selected':''}>Serif</option>
+        </select>
+        <select onchange="editorBlocks[${idx}].fontSize=this.value;refreshLayoutPreview()" class="filter-select" style="font-size:.7rem;padding:4px 6px;">
+          ${['.8rem','Xs','.9rem','Sm','1rem','Normal','1.1rem','Md','1.25rem','Lg','1.5rem','Xl','2rem','2xl'].reduce((a,v,i)=>i%2===0?[...a,[v]]:a.map((x,j)=>j===a.length-1?[...x,v]:x),[]).map(([k,v])=>`<option value="${k}" ${b.fontSize===k?'selected':''}>${v}</option>`).join('')}
+        </select>
+        <select onchange="editorBlocks[${idx}].align=this.value;refreshLayoutPreview()" class="filter-select" style="font-size:.7rem;padding:4px 6px;">
+          <option value="left" ${b.align==='left'?'selected':''}>← Izq</option>
+          <option value="center" ${b.align==='center'?'selected':''}>↔ Cen</option>
+          <option value="right" ${b.align==='right'?'selected':''}>→ Der</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:2px;font-size:.7rem;cursor:pointer;color:var(--muted);">
+          <input type="checkbox" ${b.bold?'checked':''} onchange="editorBlocks[${idx}].bold=this.checked;refreshLayoutPreview()" style="accent-color:var(--primary);"/> <b>N</b>
+        </label>
+        <input type="color" value="${b.color||'#5a6a8a'}" onchange="editorBlocks[${idx}].color=this.value;refreshLayoutPreview()" style="width:26px;height:26px;border:none;border-radius:4px;cursor:pointer;" title="Color"/>
+      </div>
+      <textarea style="width:100%;min-height:120px;background:var(--panel);border:1px solid var(--border2);border-radius:8px;padding:10px;color:var(--text);font-size:.88rem;resize:vertical;line-height:1.6;outline:none;white-space:pre-wrap;word-break:break-word;"
+        oninput="editorBlocks[${idx}].content=this.value;refreshLayoutPreview()"
+        placeholder="${placeholder||'Escribí el texto...'}">${b.content||''}</textarea>
+    </div>`;
+  }
+
+  function imgEd(idx, label) {
+    const b = editorBlocks[idx] || {type:'image',url:'',alt:''};
+    return `<div>
+      <div style="font-family:'Fraunces',serif;font-size:.72rem;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">${label||'Imagen'}</div>
+      ${b.url ? `<img src="${b.url}" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-bottom:8px;" onerror="this.style.display='none'"/>` : `<div style="width:100%;height:100px;background:var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);margin-bottom:8px;font-size:.8rem;"><i class="fas fa-image" style="margin-right:6px;"></i>Sin imagen</div>`}
+      <input class="form-input" placeholder="URL de la imagen" value="${b.url||''}" style="font-size:.82rem;"
+        oninput="editorBlocks[${idx}].url=this.value;refreshLayoutPreview()"/>
+    </div>`;
+  }
+
+  function bannerEd(idx) {
+    const b = editorBlocks[idx] || {type:'banner',url:'',height:'220px',overlayText:''};
+    return `<div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="form-group"><label class="form-label">URL de la imagen</label>
+        <input class="form-input" value="${b.url||''}" placeholder="https://...jpg"
+          oninput="editorBlocks[${idx}].url=this.value;refreshLayoutPreview()"/>
+        ${b.url?`<img src="${b.url}" style="width:100%;height:80px;object-fit:cover;border-radius:8px;margin-top:6px;" onerror="this.style.display='none'"/>`:''}
+      </div>
+      <div class="form-group"><label class="form-label">Texto encima (opcional)</label>
+        <input class="form-input" value="${b.overlayText||''}" placeholder="Bienvenido..."
+          oninput="editorBlocks[${idx}].overlayText=this.value;refreshLayoutPreview()"/></div>
+      <div class="form-group"><label class="form-label">Altura</label>
+        <select class="form-select" onchange="editorBlocks[${idx}].height=this.value;refreshLayoutPreview()">
+          ${['140px','180px','220px','280px','340px','420px'].map(h=>`<option value="${h}" ${b.height===h?'selected':''}>${h}</option>`).join('')}
+        </select></div>
+    </div>`;
+  }
+
+  function carouselEd(idx) {
+    const b = editorBlocks[idx] || {type:'carousel',items:[],height:'220px',interval:5};
+    const items = b.items||[];
+    return `<div>
+      <div class="form-grid" style="margin-bottom:10px;">
+        <div class="form-group"><label class="form-label">Altura</label>
+          <select class="form-select" onchange="editorBlocks[${idx}].height=this.value;refreshLayoutPreview()">
+            ${['140px','180px','220px','280px','340px','420px'].map(h=>`<option value="${h}" ${b.height===h?'selected':''}>${h}</option>`).join('')}
+          </select></div>
+        <div class="form-group"><label class="form-label">Segundos/imagen</label>
+          <input class="form-input" type="number" min="1" max="30" value="${b.interval||5}"
+            oninput="editorBlocks[${idx}].interval=parseInt(this.value)||5"/></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">
+        ${items.map((url,j)=>`<div style="display:flex;gap:6px;align-items:center;">
+          <span style="color:var(--muted);font-size:.75rem;min-width:18px;">${j+1}.</span>
+          <input class="form-input" value="${url}" placeholder="URL imagen ${j+1}"
+            oninput="editorBlocks[${idx}].items[${j}]=this.value;refreshLayoutPreview()" style="flex:1;font-size:.82rem;"/>
+          <button class="action-btn del" onclick="editorBlocks[${idx}].items.splice(${j},1);renderLayoutEditor(HOME_SECTIONS.find(s=>s.id===editorTargetSectionId))" style="padding:4px 8px;"><i class="fas fa-trash"></i></button>
+        </div>`).join('')}
+      </div>
+      ${items.length<5?`<button class="action-btn" onclick="editorBlocks[${idx}].items.push('');renderLayoutEditor(HOME_SECTIONS.find(s=>s.id===editorTargetSectionId))"
+        style="border-color:rgba(52,211,153,.3);color:var(--green);padding:6px 12px;font-size:.78rem;">
+        <i class="fas fa-plus"></i> Agregar imagen</button>`
+        :`<p style="font-size:.72rem;color:var(--muted);">Máximo 5 imágenes</p>`}
+    </div>`;
+  }
+
+  function chkEd(idx, label) {
+    const b = editorBlocks[idx] || {type:'checklist',items:['Item uno','Item dos','Item tres']};
+    return `<div>
+      <div style="font-family:'Fraunces',serif;font-size:.72rem;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">${label||'Lista'}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px;">
+        ${(b.items||[]).map((it,j)=>`<div style="display:flex;gap:6px;align-items:center;">
+          <span style="color:var(--primary);font-weight:800;font-size:.9rem;">✓</span>
+          <input class="form-input" value="${it}" oninput="editorBlocks[${idx}].items[${j}]=this.value;refreshLayoutPreview()" style="flex:1;font-size:.82rem;"/>
+          <button class="action-btn del" onclick="editorBlocks[${idx}].items.splice(${j},1);renderLayoutEditor(HOME_SECTIONS.find(s=>s.id===editorTargetSectionId))" style="padding:4px 8px;"><i class="fas fa-trash"></i></button>
+        </div>`).join('')}
+      </div>
+      <button class="action-btn" onclick="editorBlocks[${idx}].items.push('Nuevo item');renderLayoutEditor(HOME_SECTIONS.find(s=>s.id===editorTargetSectionId))"
+        style="border-color:rgba(52,211,153,.3);color:var(--green);padding:6px 12px;font-size:.78rem;">
+        <i class="fas fa-plus"></i> Agregar item</button>
+    </div>`;
+  }
+
+  function titleOnlyEd(idx) {
+    const b = editorBlocks[idx] || {type:'title-only',content:'Título',fontSize:'1.8rem',fontFamily:'fraunces',bold:true,color:'',align:'center'};
+    return `<div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="form-group"><label class="form-label">Texto del título</label>
+        <input class="form-input" value="${b.content||''}" placeholder="Mi título..."
+          oninput="editorBlocks[${idx}].content=this.value;refreshLayoutPreview()"/></div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Fuente</label>
+          <select class="form-select" onchange="editorBlocks[${idx}].fontFamily=this.value;refreshLayoutPreview()">
+            <option value="fraunces" ${b.fontFamily==='fraunces'?'selected':''}>Serif</option>
+            <option value="sans" ${b.fontFamily==='sans'?'selected':''}>Sans</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Tamaño</label>
+          <select class="form-select" onchange="editorBlocks[${idx}].fontSize=this.value;refreshLayoutPreview()">
+            ${['1.2rem','1.5rem','1.8rem','2rem','2.5rem','3rem'].map(s=>`<option value="${s}" ${b.fontSize===s?'selected':''}>${s}</option>`).join('')}
+          </select></div>
+        <div class="form-group"><label class="form-label">Alineación</label>
+          <select class="form-select" onchange="editorBlocks[${idx}].align=this.value;refreshLayoutPreview()">
+            <option value="left" ${b.align==='left'?'selected':''}>Izquierda</option>
+            <option value="center" ${b.align==='center'?'selected':''}>Centro</option>
+            <option value="right" ${b.align==='right'?'selected':''}>Derecha</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Color</label>
+          <input type="color" value="${b.color||'#1a2540'}" onchange="editorBlocks[${idx}].color=this.value;refreshLayoutPreview()" style="width:100%;height:38px;border:1px solid var(--border2);border-radius:8px;cursor:pointer;"/></div>
+      </div>
+    </div>`;
+  }
+
+  function dividerEd(idx) {
+    const b = editorBlocks[idx] || {type:'divider',style:'solid',width:'1px',color:'#c8d2e6',margin:'24px'};
+    return `<div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="font-family:'Fraunces',serif;font-size:.72rem;font-weight:700;color:var(--primary);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px;">Línea divisora</div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Estilo</label>
+          <select class="form-select" onchange="editorBlocks[${idx}].style=this.value;refreshLayoutPreview()">
+            <option value="solid" ${b.style==='solid'?'selected':''}>Sólida</option>
+            <option value="dashed" ${b.style==='dashed'?'selected':''}>Punteada</option>
+            <option value="dotted" ${b.style==='dotted'?'selected':''}>Puntos</option>
+            <option value="double" ${b.style==='double'?'selected':''}>Doble</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Grosor</label>
+          <select class="form-select" onchange="editorBlocks[${idx}].width=this.value;refreshLayoutPreview()">
+            ${['1px','2px','3px','4px','6px'].map(w=>`<option value="${w}" ${b.width===w?'selected':''}>${w}</option>`).join('')}
+          </select></div>
+        <div class="form-group"><label class="form-label">Color</label>
+          <input type="color" value="${b.color||'#c8d2e6'}" onchange="editorBlocks[${idx}].color=this.value;refreshLayoutPreview()" style="width:100%;height:38px;border:1px solid var(--border2);border-radius:8px;cursor:pointer;"/></div>
+        <div class="form-group"><label class="form-label">Margen vertical</label>
+          <select class="form-select" onchange="editorBlocks[${idx}].margin=this.value;refreshLayoutPreview()">
+            ${['8px','16px','24px','32px','48px'].map(m=>`<option value="${m}" ${b.margin===m?'selected':''}>${m}</option>`).join('')}
+          </select></div>
+      </div>
+    </div>`;
+  }
+
+  function videoEd(idx, label) {
+    const b = editorBlocks[idx] || {type:'video',url:'',caption:''};
+    return `<div>
+      <div style="font-family:'Fraunces',serif;font-size:.72rem;font-weight:700;color:var(--primary);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">${label||'Video'}</div>
+      <div class="form-group"><label class="form-label">URL del video (YouTube embed o .mp4)</label>
+        <input class="form-input" value="${b.url||''}" placeholder="https://www.youtube.com/embed/..."
+          oninput="editorBlocks[${idx}].url=this.value;refreshLayoutPreview()"/>
+        <div class="form-hint">Usá el link de embed de YouTube. Ej: https://www.youtube.com/embed/ID_DEL_VIDEO</div>
+      </div>
+    </div>`;
+  }
+
+  function btnEd(idx, label) {
+    const b = editorBlocks[idx] || {type:'button',label:'Botón',url:'#',color1:'#1a7acc',color2:'#3ea6ff',textColor:'#ffffff',fontSize:'1rem',fontFamily:'fraunces',bold:true,radius:'10px'};
+    return `<div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:8px;">
+      <div style="font-family:'Fraunces',serif;font-size:.72rem;font-weight:700;color:var(--primary);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;">${label||'Botón'} ${idx+1}</div>
+      <div class="form-grid">
+        <div class="form-group"><label class="form-label">Texto del botón</label>
+          <input class="form-input" value="${b.label||''}" oninput="editorBlocks[${idx}].label=this.value;refreshLayoutPreview()"/></div>
+        <div class="form-group"><label class="form-label">URL del link</label>
+          <input class="form-input" value="${b.url||''}" placeholder="https://..." oninput="editorBlocks[${idx}].url=this.value"/></div>
+        <div class="form-group"><label class="form-label">Color 1 (izq.)</label>
+          <input type="color" value="${b.color1||'#1a7acc'}" onchange="editorBlocks[${idx}].color1=this.value;refreshLayoutPreview()" style="width:100%;height:38px;border:1px solid var(--border2);border-radius:8px;cursor:pointer;"/></div>
+        <div class="form-group"><label class="form-label">Color 2 (der.)</label>
+          <input type="color" value="${b.color2||'#3ea6ff'}" onchange="editorBlocks[${idx}].color2=this.value;refreshLayoutPreview()" style="width:100%;height:38px;border:1px solid var(--border2);border-radius:8px;cursor:pointer;"/></div>
+        <div class="form-group"><label class="form-label">Color texto</label>
+          <input type="color" value="${b.textColor||'#ffffff'}" onchange="editorBlocks[${idx}].textColor=this.value;refreshLayoutPreview()" style="width:100%;height:38px;border:1px solid var(--border2);border-radius:8px;cursor:pointer;"/></div>
+        <div class="form-group"><label class="form-label">Tamaño texto</label>
+          <select class="form-select" onchange="editorBlocks[${idx}].fontSize=this.value;refreshLayoutPreview()">
+            ${['.8rem','.9rem','1rem','1.1rem','1.25rem'].map(s=>`<option value="${s}" ${b.fontSize===s?'selected':''}>${s}</option>`).join('')}
+          </select></div>
+        <div class="form-group"><label class="form-label">Fuente</label>
+          <select class="form-select" onchange="editorBlocks[${idx}].fontFamily=this.value;refreshLayoutPreview()">
+            <option value="fraunces" ${b.fontFamily==='fraunces'?'selected':''}>Serif</option>
+            <option value="sans" ${b.fontFamily==='sans'?'selected':''}>Sans</option>
+          </select></div>
+        <div class="form-group"><label class="form-label">Radio bordes</label>
+          <select class="form-select" onchange="editorBlocks[${idx}].radius=this.value;refreshLayoutPreview()">
+            ${['0px','4px','8px','10px','14px','20px','50px'].map(r=>`<option value="${r}" ${b.radius===r?'selected':''}>${r}</option>`).join('')}
+          </select></div>
+      </div>
+      <!-- Preview -->
+      <div style="margin-top:10px;display:flex;justify-content:center;">
+        <a href="${b.url||'#'}" style="background:linear-gradient(135deg,${b.color1||'#1a7acc'},${b.color2||'#3ea6ff'});color:${b.textColor||'#fff'};padding:10px 24px;border-radius:${b.radius||'10px'};font-family:${b.fontFamily==='fraunces'?"'Fraunces',serif":"'Plus Jakarta Sans',sans-serif"};font-size:${b.fontSize||'1rem'};${b.bold?'font-weight:700;':''}text-decoration:none;display:inline-block;" onclick="return false;">${b.label||'Botón'}</a>
+      </div>
+    </div>`;
+  }
+
+  // ── Build editor layout matching the visual preview ──
+  let html = '';
+  switch(lt) {
+    case 'banner':
+      html = `<div style="padding:14px;background:var(--panel2);border:1px solid var(--border);border-radius:12px;">${bannerEd(0)}</div>`;
+      break;
+    case 'carousel':
+      html = `<div style="padding:14px;background:var(--panel2);border:1px solid var(--border);border-radius:12px;">${carouselEd(0)}</div>`;
+      break;
+    case 'text-img-r':
+      html = splitPane(txtEd(0,'Texto (columna izquierda)'), imgEd(1,'Imagen (columna derecha)'), 55);
+      break;
+    case 'text-img-l':
+      html = splitPane(imgEd(0,'Imagen (columna izquierda)'), txtEd(1,'Texto (columna derecha)'), 45);
+      break;
+    case 'img-text-b':
+      html = `<div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;">
+        ${imgEd(0,'Imagen (arriba)')}
+        <div style="border-top:1px solid var(--border);margin:12px 0;"></div>
+        ${txtEd(1,'Texto (debajo centrado)','Escribí el texto que va debajo de la imagen...')}
+      </div>`;
+      break;
+    case 'img-2col':
+      html = `<div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;">
+        ${imgEd(0,'Imagen (arriba)')}
+        <div style="border-top:1px solid var(--border);margin:12px 0;"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div style="background:var(--panel);border:1px solid var(--border2);border-radius:8px;padding:10px;">${txtEd(1,'Columna izquierda')}</div>
+          <div style="background:var(--panel);border:1px solid var(--border2);border-radius:8px;padding:10px;">${txtEd(2,'Columna derecha')}</div>
+        </div>
+      </div>`;
+      break;
+    case '2img-2text':
+      html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px;">${imgEd(0,'Imagen 1')}${txtEd(1,'Texto 1')}</div>
+        <div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px;">${imgEd(2,'Imagen 2')}${txtEd(3,'Texto 2')}</div>
+      </div>`;
+      break;
+    case '3img-3text':
+      html = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+        <div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:10px;">${imgEd(0,'Imagen 1')}${txtEd(1,'Texto 1')}</div>
+        <div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:10px;">${imgEd(2,'Imagen 2')}${txtEd(3,'Texto 2')}</div>
+        <div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:10px;">${imgEd(4,'Imagen 3')}${txtEd(5,'Texto 3')}</div>
+      </div>`;
+      break;
+    case 'checklist':
+      html = `<div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;">${chkEd(0,'Lista de ítems')}</div>`;
+      break;
+    case '2checklist':
+      html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px;">${chkEd(0,'Lista izquierda')}</div>
+        <div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px;">${chkEd(1,'Lista derecha')}</div>
+      </div>`;
+      break;
+    case 'text-center':
+      html = `<div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;">${txtEd(0,'Texto centrado','Escribí el texto centrado aquí...')}</div>`;
+      break;
+    case 'title-only':
+      html = `<div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;">${titleOnlyEd(0)}</div>`;
+      break;
+    case 'divider':
+      html = `<div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;">${dividerEd(0)}</div>`;
+      break;
+    case 'video-text':
+      html = `<div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;">
+        ${videoEd(0,'Video')}
+        <div style="border-top:1px solid var(--border);margin:12px 0;"></div>
+        ${txtEd(1,'Texto debajo del video')}
+      </div>`;
+      break;
+    case 'video-only':
+      html = `<div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;">${videoEd(0,'Video')}</div>`;
+      break;
+    case 'buttons': {
+      const btnCount = editorBlocks.filter(b=>b.type==='button').length || 2;
+      html = `<div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;">
+        <div style="font-family:'Fraunces',serif;font-size:.75rem;font-weight:700;color:var(--primary);margin-bottom:12px;text-transform:uppercase;letter-spacing:.5px;">Botones con link</div>
+        ${editorBlocks.map((b,i)=>b.type==='button'?btnEd(i,'Botón'):'').join('')}
+        ${editorBlocks.length<6?`<button class="action-btn" onclick="editorBlocks.push({type:'button',label:'Nuevo botón',url:'#',color1:'#1a7acc',color2:'#3ea6ff',textColor:'#fff',fontSize:'1rem',fontFamily:'fraunces',bold:true,radius:'10px'});renderLayoutEditor(HOME_SECTIONS.find(s=>s.id===editorTargetSectionId))"
+          style="border-color:rgba(52,211,153,.3);color:var(--green);padding:6px 12px;font-size:.78rem;margin-top:8px;">
+          <i class="fas fa-plus"></i> Agregar botón</button>`:''}
+      </div>`;
+      break;
+    }
+    default:
+      html = `<div style="background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;">${txtEd(0,'Texto')}</div>`;
+  }
+  cont.innerHTML = html;
+  // Start split listeners after render
+  setTimeout(()=>{ const d=document.getElementById(splitId+'-D'); if(d&&d._listening)return; }, 50);
+}
+
+function refreshLayoutPreview() {
+  renderHomeDynamicSections();
+}
+
+// ── Draggable column splitter ──
+function _startSplit(splitId, e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const container = document.getElementById(splitId);
+  const left  = document.getElementById(splitId+'-L');
+  const right = document.getElementById(splitId+'-R');
+  if (!container || !left || !right) return;
+  const startX   = e.clientX;
+  const totalW   = container.getBoundingClientRect().width;
+  const startLeftW = left.getBoundingClientRect().width;
+
+  function onMove(ev) {
+    const dx = ev.clientX - startX;
+    let newLeftPct = ((startLeftW + dx) / totalW) * 100;
+    newLeftPct = Math.max(15, Math.min(85, newLeftPct));
+    left.style.width  = newLeftPct + '%';
+    right.style.flex  = 'none';
+    right.style.width = (100 - newLeftPct - 0.6) + '%';
+    // Save to section
+    if (editorTargetSectionId) {
+      const sec = HOME_SECTIONS.find(s=>s.id===editorTargetSectionId);
+      if (sec) sec._splitPct = Math.round(newLeftPct);
+    }
+  }
+  function onUp() {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    // Update the live preview
+    renderHomeDynamicSections();
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
 }
 
 function addEditorBlock(type) {
@@ -2664,15 +3464,161 @@ function renderEditorBlocks() {
 function renderHomeDynamicSections() {
   const el = document.getElementById('homeDynamicSections');
   if (!el) return;
-  const visible = HOME_SECTIONS.filter(s=>s.visible && s.type !== 'hero' && s.type !== 'featured' && s.type !== 'banners' && s.type !== 'explore');
+  const FIXED_TYPES = ['hero','featured','explore','media'];
+  const visible = HOME_SECTIONS.filter(s => s.visible && !FIXED_TYPES.includes(s.type));
   el.innerHTML = visible.map(sec => {
-    const titleHtml = sec.showTitle !== false && sec.displayTitle
-      ? `<h2 style="font-family:'Fraunces',serif;font-size:1.3rem;font-weight:800;color:var(--text);text-align:center;margin-bottom:18px;">${sec.displayTitle}</h2>`
-      : '';
-    const blocksHtml = (sec.blocks||[]).map(b => renderSectionBlock(b)).join('');
-    if (!titleHtml && !blocksHtml) return '';
-    return `<div style="margin:28px 0;" id="home-sec-${sec.id}">${titleHtml}${blocksHtml}</div>`;
+    // Title
+    let titleHtml = '';
+    if (sec.showTitle !== false && sec.displayTitle) {
+      const ts = sec.titleStyle || {};
+      const ff = ts.font === 'fraunces' ? "'Fraunces',serif" : "'Plus Jakarta Sans',sans-serif";
+      const fw = ts.bold !== false ? '800' : '400';
+      titleHtml = `<h2 style="font-family:${ff};font-size:${ts.size||'1.3rem'};font-weight:${fw};color:${ts.color||'var(--text)'};text-align:center;margin-bottom:18px;">${sec.displayTitle}</h2>`;
+    }
+    const bodyHtml = renderLayoutSection(sec);
+    if (!titleHtml && !bodyHtml) return '';
+    // Background styles
+    const bg = sec.background || {};
+    const fullW = bg.fullWidth !== false; // default full width
+    const radius = bg.corners === 'square' ? '0px' : bg.corners === 'slight' ? '6px' : bg.corners === 'rounded' ? '14px' : '0px';
+    const opacity = bg.opacity != null ? bg.opacity : 1;
+    let bgStyle = '';
+    let overlayHtml = '';
+
+    if (bg.type && bg.type !== 'none') {
+      if (bg.type === 'gradient') {
+        const dirs = {lr:'to right', rl:'to left', tb:'to bottom', bt:'to top'};
+        const c1 = bg.color1 || '#ff8c42';
+        const c2 = bg.color2 || '#3ea6ff';
+        bgStyle = `background:linear-gradient(${dirs[bg.gradDir]||'to right'},${c1},${c2});padding:32px 24px;position:relative;border-radius:${radius};opacity:${opacity};`;
+      } else if (bg.imgUrl) {
+        const att = bg.type === 'parallax' ? 'fixed' : 'scroll';
+        bgStyle = `background-image:url('${bg.imgUrl}');background-size:cover;background-position:center;background-attachment:${att};padding:32px 24px;position:relative;overflow:hidden;border-radius:${radius};`;
+        if (bg.blur) bgStyle += 'filter:none;'; // blur via pseudo
+        // Overlay inside
+        if (bg.overlay === 'dark')
+          overlayHtml = `<div style="position:absolute;inset:0;background:rgba(0,0,0,.35);z-index:0;border-radius:${radius};"></div>`;
+        else if (bg.overlay === 'vignette')
+          overlayHtml = `<div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 40%,rgba(0,0,0,.65) 100%);z-index:0;border-radius:${radius};"></div>`;
+        // Blur: wrap image in pseudo via inner div
+        if (bg.blur)
+          overlayHtml += `<div style="position:absolute;inset:0;background:inherit;filter:blur(8px);z-index:-1;transform:scale(1.05);border-radius:${radius};"></div>`;
+        if (opacity < 1)
+          overlayHtml += `<div style="position:absolute;inset:0;background:rgba(255,255,255,${1-opacity});z-index:0;border-radius:${radius};"></div>`;
+      }
+    }
+
+    const hasBg = bg.type && bg.type !== 'none';
+    const contentStyle = hasBg ? 'position:relative;z-index:1;' : '';
+    // Full width: use negative margin to break out of main padding
+    const wrapStyle = hasBg && fullW
+      ? `margin:32px -30px;${bgStyle}`
+      : `margin:32px 0;${hasBg?bgStyle:''}`;
+
+    return `<div style="${wrapStyle}" id="home-sec-${sec.id}">${overlayHtml}<div style="${contentStyle}${hasBg&&fullW?'padding:0 30px;':''}">${titleHtml}${bodyHtml}</div></div>`;
   }).join('');
+}
+
+function renderLayoutSection(sec) {
+  const blocks = sec.blocks || [];
+  const lt = sec.layoutType || 'text-center';
+
+  function renderTxt(b) {
+    if (!b) return '';
+    const ff = b.fontFamily === 'fraunces' ? "'Fraunces',serif" : "'Plus Jakarta Sans',sans-serif";
+    return '<div style="font-family:'+ff+';font-size:'+(b.fontSize||'1rem')+';text-align:'+(b.align||'left')+';'+(b.bold?'font-weight:700;':'')+(b.color?'color:'+b.color+';':'color:var(--muted);')+'line-height:1.75;word-break:break-word;display:flex;flex-direction:column;justify-content:center;align-self:center;width:100%;">'+(b.content||'').split('\n').join('<br/>')+'</div>';
+  }
+  function renderImg(b) {
+    if (!b || !b.url) return '';
+    return `<img src="${b.url}" alt="${b.alt||''}" style="width:100%;border-radius:12px;display:block;" onerror="this.style.display='none'"/>`;
+  }
+  function renderChk(b) {
+    const items = b?.items || [];
+    return `<ul style="list-style:none;display:flex;flex-direction:column;gap:8px;">${items.map(it=>`<li style="display:flex;align-items:flex-start;gap:8px;font-size:.9rem;color:var(--muted);"><span style="color:var(--primary);font-weight:800;margin-top:1px;">✓</span><span>${it}</span></li>`).join('')}</ul>`;
+  }
+  function renderBtn(b) {
+    if (!b || b.type !== 'button') return '';
+    const ff = b.fontFamily === 'fraunces' ? "'Fraunces',serif" : "'Plus Jakarta Sans',sans-serif";
+    return `<a href="${b.url||'#'}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,${b.color1||'#1a7acc'},${b.color2||'#3ea6ff'});color:${b.textColor||'#fff'};padding:12px 28px;border-radius:${b.radius||'10px'};font-family:${ff};font-size:${b.fontSize||'1rem'};${b.bold!==false?'font-weight:700;':''}text-decoration:none;transition:filter .2s;" onmouseover="this.style.filter='brightness(1.1)'" onmouseout="this.style.filter=''">${b.label||'Botón'}</a>`;
+  }
+  function renderVideo(b) {
+    if (!b || !b.url) return '';
+    const isYt = b.url.includes('youtube.com') || b.url.includes('youtu.be');
+    return isYt
+      ? `<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:12px;overflow:hidden;"><iframe src="${b.url}" style="position:absolute;inset:0;width:100%;height:100%;" frameborder="0" allowfullscreen></iframe></div>`
+      : `<video src="${b.url}" controls style="width:100%;border-radius:12px;display:block;"></video>`;
+  }
+
+  const G = 'gap:24px;';
+  switch(lt) {
+    case 'banner': {
+      const b = blocks[0] || {};
+      if (!b.url) return `<div style="width:100%;height:${b.height||'220px'};background:var(--border);border-radius:14px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.85rem;">Sin imagen — agregá una URL en el editor</div>`;
+      return `<div style="width:100%;height:${b.height||'220px'};border-radius:14px;overflow:hidden;position:relative;">
+        <img src="${b.url}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'"/>
+        ${b.overlayText?`<div style="position:absolute;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-family:'Fraunces',serif;font-size:1.6rem;font-weight:800;text-align:center;padding:0 24px;">${b.overlayText}</span></div>`:''}
+      </div>`;
+    }
+    case 'carousel': {
+      const cb = blocks[0] || {};
+      const items = (cb.items||[]).filter(Boolean);
+      if (!items.length) return `<div style="width:100%;height:${cb.height||'220px'};background:var(--border);border-radius:14px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.85rem;">Carrusel sin imágenes aún</div>`;
+      const sid = 'car-'+sec.id;
+      return `<div id="${sid}" style="width:100%;height:${cb.height||'220px'};border-radius:14px;overflow:hidden;position:relative;">
+        ${items.map((url,j)=>`<div class="banner-slide ${j===0?'active':''}" style="background:#000;"><img class="banner-slide-img" src="${url}" onerror="this.style.opacity='.2'"/></div>`).join('')}
+        <div class="banner-dots">${items.map((_,j)=>`<div class="banner-dot ${j===0?'active':''}" onclick="_carGo('${sid}',${j})"></div>`).join('')}</div>
+      </div>`;
+    }
+    case 'text-img-r': {
+      const lp = (sec._splitPct||50)+'%';
+      return `<div style="display:flex;${G}align-items:flex-start;flex-wrap:nowrap;"><div style="width:${lp};min-width:0;flex-shrink:0;">${renderTxt(blocks[0])}</div><div style="flex:1;min-width:0;">${renderImg(blocks[1])}</div></div>`;
+    }
+    case 'text-img-l': {
+      const lp = (sec._splitPct||50)+'%';
+      return `<div style="display:flex;${G}align-items:flex-start;flex-wrap:nowrap;"><div style="width:${lp};min-width:0;flex-shrink:0;">${renderImg(blocks[0])}</div><div style="flex:1;min-width:0;">${renderTxt(blocks[1])}</div></div>`;
+    }
+    case 'img-text-b': return `<div style="display:flex;flex-direction:column;${G}align-items:center;">${renderImg(blocks[0])}<div style="text-align:center;max-width:700px;width:100%;">${renderTxt(blocks[1])}</div></div>`;
+    case 'img-2col':   return `<div style="display:flex;flex-direction:column;${G}">${renderImg(blocks[0])}<div style="display:grid;grid-template-columns:1fr 1fr;${G}">${renderTxt(blocks[1])}${renderTxt(blocks[2])}</div></div>`;
+    case '2img-2text': return `<div style="display:grid;grid-template-columns:1fr 1fr;${G}">${[0,2].map(i=>`<div>${renderImg(blocks[i])}<div style="margin-top:12px;">${renderTxt(blocks[i+1])}</div></div>`).join('')}</div>`;
+    case '3img-3text': return `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;${G}">${[0,2,4].map(i=>`<div>${renderImg(blocks[i])}<div style="margin-top:10px;">${renderTxt(blocks[i+1])}</div></div>`).join('')}</div>`;
+    case 'checklist':  return renderChk(blocks[0]);
+    case '2checklist': return `<div style="display:grid;grid-template-columns:1fr 1fr;${G}">${renderChk(blocks[0])}${renderChk(blocks[1])}</div>`;
+    case 'text-center':return `<div style="max-width:700px;margin:0 auto;">${renderTxt({...blocks[0], align:'center'})}</div>`;
+    case 'title-only': {
+      const b = blocks[0]||{};
+      const ff = b.fontFamily==='fraunces'?"'Fraunces',serif":"'Plus Jakarta Sans',sans-serif";
+      return `<div style="text-align:${b.align||'center'};font-family:${ff};font-size:${b.fontSize||'1.8rem'};${b.bold!==false?'font-weight:800;':''}${b.color?'color:'+b.color+';':'color:var(--text);'}">${b.content||''}</div>`;
+    }
+    case 'divider': {
+      const b = blocks[0]||{};
+      return `<div style="margin:${b.margin||'24px'} 20px;border-top:${b.width||'1px'} ${b.style||'solid'} ${b.color||'#c8d2e6'};"></div>`;
+    }
+    case 'video-text': return `<div>${renderVideo(blocks[0])}<div style="margin-top:16px;">${renderTxt(blocks[1])}</div></div>`;
+    case 'video-only': return renderVideo(blocks[0]);
+    case 'buttons': {
+      const btns = blocks.filter(b=>b.type==='button');
+      return `<div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center;">${btns.map(b=>renderBtn(b)).join('')}</div>`;
+    }
+    default: return blocks.map(b=>b.type==='text'?renderTxt(b):renderImg(b)).join('');
+  }
+}
+
+// Carousel auto-advance
+function _carGo(sid, idx) {
+  const c = document.getElementById(sid); if (!c) return;
+  c.querySelectorAll('.banner-slide').forEach((s,i)=>s.classList.toggle('active',i===idx));
+  c.querySelectorAll('.banner-dot').forEach((d,i)=>d.classList.toggle('active',i===idx));
+}
+const _carTimers = {};
+function _startCarousel(sid, interval) {
+  if (_carTimers[sid]) clearInterval(_carTimers[sid]);
+  let idx = 0;
+  _carTimers[sid] = setInterval(() => {
+    const c = document.getElementById(sid); if (!c) { clearInterval(_carTimers[sid]); return; }
+    const slides = c.querySelectorAll('.banner-slide');
+    idx = (idx+1) % slides.length;
+    _carGo(sid, idx);
+  }, (interval||5)*1000);
 }
 
 function renderSectionBlock(b) {
@@ -2697,28 +3643,135 @@ function renderSectionBlock(b) {
   return '';
 }
 
-// Rename addHomeSectionModal -> addHomeSectionSimple
-function addHomeSectionSimple() {
-  const name = prompt('Nombre de la nueva sección:');
-  if (!name || !name.trim()) return;
-  HOME_SECTIONS.push({
+// ── Layout picker modal ──────────────────────────────────────
+const LAYOUT_OPTIONS = [
+  {id:'banner',      label:'Banner gigante',              icon:'fa-image',        desc:'Una imagen de ancho completo'},
+  {id:'carousel',    label:'Carrusel de banners',         icon:'fa-images',       desc:'Hasta 5 imágenes rotativas'},
+  {id:'text-img-r',  label:'Texto izq. + Imagen der.',    icon:'fa-th-large',     desc:'Texto a la izquierda, imagen a la derecha'},
+  {id:'text-img-l',  label:'Imagen izq. + Texto der.',    icon:'fa-th-large',     desc:'Imagen a la izquierda, texto a la derecha'},
+  {id:'img-text-b',  label:'Imagen arriba + Texto abajo', icon:'fa-align-center', desc:'Imagen centrada con texto debajo'},
+  {id:'img-2col',    label:'Imagen + 2 columnas texto',   icon:'fa-columns',      desc:'Imagen arriba, dos columnas de texto debajo'},
+  {id:'2img-2text',  label:'2 Imágenes + 2 textos',       icon:'fa-th',           desc:'2 imágenes, cada una con su texto abajo'},
+  {id:'3img-3text',  label:'3 Imágenes + 3 textos',       icon:'fa-th',           desc:'3 imágenes con texto bajo cada una'},
+  {id:'checklist',   label:'Lista tildada',               icon:'fa-check-square', desc:'Una columna con ítems tildados'},
+  {id:'2checklist',  label:'2 Listas tildadas',           icon:'fa-check-square', desc:'Dos columnas con ítems tildados'},
+  {id:'text-center', label:'Texto centrado',              icon:'fa-align-center', desc:'Bloque de texto centrado'},
+  {id:'title-only',  label:'Solo título',                 icon:'fa-heading',      desc:'Un título grande, sin cuerpo'},
+  {id:'divider',     label:'Línea divisora',              icon:'fa-minus',        desc:'Separador horizontal editable'},
+  {id:'video-text',  label:'Video + Texto abajo',         icon:'fa-play-circle',  desc:'Video embed y texto debajo'},
+  {id:'video-only',  label:'Solo video',                  icon:'fa-film',         desc:'Video embed de ancho completo'},
+  {id:'buttons',     label:'Botones con link',            icon:'fa-hand-pointer', desc:'1 o varios botones personalizables'},
+];
+
+const LAYOUT_PREVIEWS = {
+  'banner':     `<div style="width:100%;height:60px;background:linear-gradient(135deg,#1a7acc,#3ea6ff);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:700;">BANNER</div>`,
+  'carousel':   `<div style="width:100%;height:60px;background:linear-gradient(135deg,#7c3aed,#a78bfa);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:700;gap:4px;"><div style="width:8px;height:8px;background:#fff;border-radius:50%;"></div><div style="width:14px;height:8px;background:rgba(255,255,255,.5);border-radius:4px;"></div><div style="width:8px;height:8px;background:rgba(255,255,255,.3);border-radius:50%;"></div></div>`,
+  'text-img-r': `<div style="width:100%;height:60px;display:flex;gap:4px;border-radius:8px;overflow:hidden;"><div style="flex:1;background:rgba(62,166,255,.15);border:1px solid rgba(62,166,255,.3);display:flex;align-items:center;justify-content:center;padding:4px;"><div style="width:80%;height:4px;background:var(--muted);border-radius:2px;margin-bottom:2px;"></div></div><div style="width:45%;background:linear-gradient(135deg,#d0e4f8,#e8f0ff);display:flex;align-items:center;justify-content:center;font-size:.9rem;">🖼</div></div>`,
+  'text-img-l': `<div style="width:100%;height:60px;display:flex;gap:4px;border-radius:8px;overflow:hidden;"><div style="width:45%;background:linear-gradient(135deg,#d0e4f8,#e8f0ff);display:flex;align-items:center;justify-content:center;font-size:.9rem;">🖼</div><div style="flex:1;background:rgba(62,166,255,.15);border:1px solid rgba(62,166,255,.3);display:flex;align-items:center;justify-content:center;"></div></div>`,
+  'img-text-b': `<div style="width:100%;height:60px;display:flex;flex-direction:column;gap:3px;border-radius:8px;overflow:hidden;"><div style="height:35px;background:linear-gradient(135deg,#d0e4f8,#e8f0ff);display:flex;align-items:center;justify-content:center;font-size:.9rem;">🖼</div><div style="flex:1;background:rgba(62,166,255,.1);"></div></div>`,
+  'img-2col':   `<div style="width:100%;height:60px;display:flex;flex-direction:column;gap:3px;border-radius:8px;overflow:hidden;"><div style="height:30px;background:linear-gradient(135deg,#d0e4f8,#e8f0ff);display:flex;align-items:center;justify-content:center;font-size:.8rem;">🖼</div><div style="flex:1;display:flex;gap:3px;"><div style="flex:1;background:rgba(62,166,255,.1);"></div><div style="flex:1;background:rgba(62,166,255,.1);"></div></div></div>`,
+  '2img-2text': `<div style="width:100%;height:60px;display:flex;flex-direction:column;gap:3px;border-radius:8px;overflow:hidden;"><div style="flex:1;display:flex;gap:3px;"><div style="flex:1;background:linear-gradient(135deg,#d0e4f8,#e8f0ff);display:flex;align-items:center;justify-content:center;font-size:.7rem;">🖼</div><div style="flex:1;background:linear-gradient(135deg,#d0e4f8,#e8f0ff);display:flex;align-items:center;justify-content:center;font-size:.7rem;">🖼</div></div><div style="flex:1;display:flex;gap:3px;"><div style="flex:1;background:rgba(62,166,255,.1);"></div><div style="flex:1;background:rgba(62,166,255,.1);"></div></div></div>`,
+  '3img-3text': `<div style="width:100%;height:60px;display:flex;flex-direction:column;gap:2px;border-radius:8px;overflow:hidden;"><div style="flex:1;display:flex;gap:2px;"><div style="flex:1;background:linear-gradient(135deg,#d0e4f8,#e8f0ff);display:flex;align-items:center;justify-content:center;font-size:.6rem;">🖼</div><div style="flex:1;background:linear-gradient(135deg,#d0e4f8,#e8f0ff);display:flex;align-items:center;justify-content:center;font-size:.6rem;">🖼</div><div style="flex:1;background:linear-gradient(135deg,#d0e4f8,#e8f0ff);display:flex;align-items:center;justify-content:center;font-size:.6rem;">🖼</div></div><div style="flex:1;display:flex;gap:2px;"><div style="flex:1;background:rgba(62,166,255,.1);"></div><div style="flex:1;background:rgba(62,166,255,.1);"></div><div style="flex:1;background:rgba(62,166,255,.1);"></div></div></div>`,
+  'checklist':  `<div style="width:100%;height:60px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);border-radius:8px;padding:6px 8px;display:flex;flex-direction:column;justify-content:center;gap:4px;">${['✓ Item uno','✓ Item dos','✓ Item tres'].map(t=>`<div style="font-size:.55rem;color:var(--muted);">${t}</div>`).join('')}</div>`,
+  '2checklist': `<div style="width:100%;height:60px;display:flex;gap:3px;border-radius:8px;overflow:hidden;"><div style="flex:1;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);padding:5px;display:flex;flex-direction:column;gap:3px;"><div style="font-size:.5rem;color:var(--muted);">✓ Item</div><div style="font-size:.5rem;color:var(--muted);">✓ Item</div></div><div style="flex:1;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);padding:5px;display:flex;flex-direction:column;gap:3px;"><div style="font-size:.5rem;color:var(--muted);">✓ Item</div><div style="font-size:.5rem;color:var(--muted);">✓ Item</div></div></div>`,
+  'text-center': `<div style="width:100%;height:60px;background:rgba(62,166,255,.06);border:1px solid rgba(62,166,255,.15);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px;"><div style="width:60%;height:4px;background:var(--primary);border-radius:2px;opacity:.6;"></div><div style="width:80%;height:3px;background:var(--muted);border-radius:2px;opacity:.4;"></div><div style="width:70%;height:3px;background:var(--muted);border-radius:2px;opacity:.4;"></div></div>`,
+  'title-only':  `<div style="width:100%;height:60px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border2);border-radius:8px;"><div style="width:70%;height:6px;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:3px;"></div></div>`,
+  'divider':     `<div style="width:100%;height:60px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border2);border-radius:8px;"><div style="width:80%;height:2px;background:var(--muted);opacity:.5;"></div></div>`,
+  'video-text':  `<div style="width:100%;height:60px;display:flex;flex-direction:column;gap:4px;border-radius:8px;overflow:hidden;"><div style="height:38px;background:linear-gradient(135deg,#111,#333);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;">▶</div><div style="flex:1;background:rgba(62,166,255,.08);"></div></div>`,
+  'video-only':  `<div style="width:100%;height:60px;background:linear-gradient(135deg,#111,#333);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.2rem;">▶</div>`,
+  'buttons':     `<div style="width:100%;height:60px;display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--border2);border-radius:8px;"><div style="padding:5px 12px;background:linear-gradient(135deg,#1a7acc,#3ea6ff);border-radius:20px;color:#fff;font-size:.55rem;font-weight:700;">BOTÓN 1</div><div style="padding:5px 12px;background:linear-gradient(135deg,#ff8c42,#f0c060);border-radius:20px;color:#fff;font-size:.55rem;font-weight:700;">BOTÓN 2</div></div>`,
+};
+
+function openAddSectionModal() {
+  const el = document.getElementById('addSectionModalGrid');
+  if (el) {
+    el.innerHTML = LAYOUT_OPTIONS.map(opt => `
+      <div class="layout-opt" onclick="selectLayoutOpt('${opt.id}')" id="lopt-${opt.id}"
+        style="background:var(--panel2);border:2px solid var(--border2);border-radius:12px;padding:12px;cursor:pointer;transition:all .2s;text-align:center;">
+        <div style="margin-bottom:8px;">${LAYOUT_PREVIEWS[opt.id]||''}</div>
+        <div style="font-family:'Fraunces',serif;font-size:.78rem;font-weight:800;color:var(--text);margin-bottom:3px;">${opt.label}</div>
+        <div style="font-size:.65rem;color:var(--muted);line-height:1.3;">${opt.desc}</div>
+      </div>`).join('');
+  }
+  document.getElementById('newSecName').value = '';
+  selectedLayoutOpt = null;
+  document.getElementById('addSectionModal').classList.add('open');
+}
+
+let selectedLayoutOpt = null;
+function selectLayoutOpt(id) {
+  selectedLayoutOpt = id;
+  document.querySelectorAll('.layout-opt').forEach(el => {
+    el.style.borderColor = el.id === 'lopt-'+id ? 'var(--primary)' : 'var(--border2)';
+    el.style.background  = el.id === 'lopt-'+id ? 'rgba(62,166,255,.08)' : 'var(--panel2)';
+  });
+}
+
+function confirmAddSection() {
+  const name = document.getElementById('newSecName').value.trim();
+  if (!name) { showToast('Escribí un nombre para la sección','error'); return; }
+  if (!selectedLayoutOpt) { showToast('Elegí un tipo de sección','error'); return; }
+  const opt = LAYOUT_OPTIONS.find(o=>o.id===selectedLayoutOpt);
+  const newSec = {
     id: 'hs'+Date.now(),
-    type: 'custom',
-    title: name.trim(),
-    displayTitle: name.trim(),
+    type: 'layout',
+    layoutType: selectedLayoutOpt,
+    layoutLabel: opt?.label || selectedLayoutOpt,
+    title: name,
+    displayTitle: name,
     showTitle: true,
+    titleStyle: {font:'fraunces', size:'1.3rem', color:'', bold:true},
     visible: true,
     locked: false,
-    blocks: [],
-  });
+    blocks: _buildDefaultBlocks(selectedLayoutOpt),
+    // For carousel/banner
+    carouselItems: [],
+    carouselInterval: 5,
+    bannerHeight: '220px',
+    bannerUrl: '',
+  };
+  HOME_SECTIONS.push(newSec);
   renderHomeSectionsList();
-  showToast('Sección agregada. Usá las flechas para ordenarla y presioná "Aplicar cambios".','success');
+  saveHomeSectionsToStorage();
+  document.getElementById('addSectionModal').classList.remove('open');
+  showToast(`Sección "${name}" creada. Bajá a Panel Inicio para editarla.`, 'success');
 }
+
+function _buildDefaultBlocks(layoutType) {
+  const txt = () => ({type:'text', content:'Escribí aquí tu texto...', align:'left', fontSize:'1rem', bold:false, color:'', fontFamily:'sans'});
+  const img = () => ({type:'image', url:'', alt:''});
+  const chk = () => ({type:'checklist', items:['Item uno','Item dos','Item tres']});
+  const btn = () => ({type:'button', label:'Más información', url:'#', color1:'#1a7acc', color2:'#3ea6ff', textColor:'#ffffff', fontSize:'1rem', fontFamily:'fraunces', bold:true, radius:'10px'});
+  const div_b = () => ({type:'divider', style:'solid', width:'1px', color:'#c8d2e6', margin:'24px'});
+  const vid = () => ({type:'video', url:'', caption:''});
+  switch(layoutType) {
+    case 'banner':     return [{type:'banner', url:'', height:'220px', overlayText:''}];
+    case 'carousel':   return [{type:'carousel', items:[], height:'220px', interval:5}];
+    case 'text-img-r': return [img(), txt()];
+    case 'text-img-l': return [img(), txt()];
+    case 'img-text-b': return [img(), txt()];
+    case 'img-2col':   return [img(), txt(), txt()];
+    case '2img-2text': return [img(), txt(), img(), txt()];
+    case '3img-3text': return [img(), txt(), img(), txt(), img(), txt()];
+    case 'checklist':  return [chk()];
+    case '2checklist': return [chk(), chk()];
+    case 'text-center':return [txt()];
+    case 'title-only': return [{type:'title-only', content:'Título de la sección', fontSize:'1.8rem', fontFamily:'fraunces', bold:true, color:'', align:'center'}];
+    case 'divider':    return [div_b()];
+    case 'video-text': return [vid(), txt()];
+    case 'video-only': return [vid()];
+    case 'buttons':    return [btn(), btn()];
+    default:           return [txt()];
+  }
+}
+
+function addHomeSectionModal() { openAddSectionModal(); }
 
 function applyHomeSections() {
   renderHomeDynamicSections();
   saveHomeSectionsToStorage();
-  showToast('Secciones aplicadas al inicio ✓ (guardado localmente)','success');
+  renderHomeSectionsList(); // refresh the list to show new order
+  showToast('✓ Cambios guardados y aplicados al inicio', 'success');
 }
 
 // ═══════════════════════ USER FILTERS ═══════════════════════
@@ -3277,11 +4330,10 @@ function applyFooterConfig() {
 
 // ═══════════════════════ HOME SECTIONS CONFIG ═══════════════════════
 let HOME_SECTIONS = [
-  {id:'hs1', type:'media',    title:'Video / Banner de Cabecera', visible:true,  locked:false, content:{type:'placeholder'}},
-  {id:'hs2', type:'hero',     title:'Hero Principal',             visible:true,  locked:true,  content:{}},
-  {id:'hs3', type:'banners',  title:'Slider de Banners',          visible:true,  locked:false, content:{}},
-  {id:'hs4', type:'explore',  title:'Explorar Categorías',        visible:true,  locked:false, content:{}},
-  {id:'hs5', type:'featured', title:'Cursos Destacados',          visible:true,  locked:false, content:{}},
+  {id:'hs1', type:'media',    title:'Banner / Video de Cabecera', visible:true, locked:false, content:{type:'placeholder'}},
+  {id:'hs2', type:'hero',     title:'Hero Principal',             visible:true, locked:true,  content:{}},
+  {id:'hs4', type:'explore',  title:'Explorar Categorías',        visible:true, locked:false, content:{}},
+  {id:'hs5', type:'featured', title:'Cursos Destacados',          visible:true, locked:false, content:{}},
 ];
 
 function showAdminInicioSuper() {
@@ -3295,38 +4347,52 @@ function showAdminInicioSuper() {
 function renderHomeSectionsList() {
   const el = document.getElementById('homeSectionsList');
   if (!el) return;
-  const typeLabels = {media:'🎬 Media',hero:'🦸 Hero',banners:'🖼 Banners',explore:'🗂 Explorar',featured:'⭐ Destacados',custom:'📝 Texto',carousel:'🎠 Carrusel'};
-  el.innerHTML = HOME_SECTIONS.map((sec, i) => `
-    <div style="background:var(--panel);border:1px solid ${sec.visible?'var(--border)':'rgba(240,192,64,.3)'};border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:12px;${!sec.visible?'opacity:.6;':''}">
-      <div style="display:flex;flex-direction:column;gap:3px;">
-        <button class="action-btn" onclick="moveHomeSection(${i},-1)" ${i===0?'disabled':''} style="padding:2px 6px;font-size:.6rem;">▲</button>
-        <button class="action-btn" onclick="moveHomeSection(${i},1)" ${i===HOME_SECTIONS.length-1?'disabled':''} style="padding:2px 6px;font-size:.6rem;">▼</button>
+  const typeLabels = {media:'🎬 Banner/Video',hero:'🦸 Hero',explore:'🗂 Categorías',featured:'⭐ Destacados',layout:'🔲 Layout',custom:'📝 Texto'};
+  el.innerHTML = HOME_SECTIONS.map((sec, i) => {
+    const typeLabel = typeLabels[sec.type] || sec.type;
+    const layoutBadge = sec.layoutLabel ? `<span style="font-size:.62rem;color:var(--muted2);font-style:italic;margin-left:4px;">(${sec.layoutLabel})</span>` : '';
+    return `<div style="background:var(--panel);border:1px solid ${sec.visible?'var(--border)':'rgba(240,192,64,.3)'};border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;${!sec.visible?'opacity:.55;':''}">
+      <div style="display:flex;flex-direction:column;gap:2px;">
+        <button class="action-btn" onclick="moveSectionUp(${i})" ${i===0?'disabled':''} style="padding:3px 8px;font-size:.65rem;">▲</button>
+        <button class="action-btn" onclick="moveSectionDown(${i})" ${i===HOME_SECTIONS.length-1?'disabled':''} style="padding:3px 8px;font-size:.65rem;">▼</button>
       </div>
-      <div style="flex:1;">
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span style="font-size:.72rem;color:var(--muted);background:var(--panel2);padding:2px 8px;border-radius:20px;">${typeLabels[sec.type]||sec.type}</span>
-          <span style="font-size:.85rem;font-weight:700;color:var(--text);">${sec.title}</span>
-          ${!sec.visible?'<span style="font-size:.65rem;color:var(--gold);font-weight:700;">OCULTA</span>':''}
-          ${sec.locked?'<span style="font-size:.65rem;color:var(--muted);"><i class="fas fa-lock"></i></span>':''}
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-size:.68rem;color:var(--muted);background:var(--panel2);padding:2px 8px;border-radius:20px;white-space:nowrap;">${typeLabel}</span>
+          <span style="font-size:.85rem;font-weight:700;color:var(--text);">${sec.title}</span>${layoutBadge}
+          ${!sec.visible?'<span style="font-size:.6rem;color:var(--gold);font-weight:700;">OCULTA</span>':''}
+          ${sec.locked?'<span style="font-size:.6rem;color:var(--muted);"><i class="fas fa-lock"></i></span>':''}
         </div>
       </div>
-      <div style="display:flex;gap:6px;">
-        <button class="action-btn" onclick="editHomeSectionTitle(${i})" title="Renombrar"><i class="fas fa-edit"></i></button>
-        <button class="action-btn hide-btn ${!sec.visible?'hidden-active':''}" onclick="toggleHomeSection(${i})">
+      <div style="display:flex;gap:5px;">
+        <button class="action-btn" onclick="editHomeSectionTitle(${i})" title="Renombrar" style="padding:5px 8px;"><i class="fas fa-pencil-alt"></i></button>
+        <button class="action-btn hide-btn ${!sec.visible?'hidden-active':''}" onclick="toggleHomeSection(${i})" style="padding:5px 8px;">
           <i class="fas ${sec.visible?'fa-eye-slash':'fa-eye'}"></i>
         </button>
-        ${!sec.locked?`<button class="action-btn del" onclick="deleteHomeSection(${i})"><i class="fas fa-trash"></i></button>`:''}
+        ${!sec.locked?`<button class="action-btn del" onclick="deleteHomeSection(${i})" style="padding:5px 8px;"><i class="fas fa-trash"></i></button>`:''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+}
+
+// Separate up/down functions so they work reliably
+function moveSectionUp(i) {
+  if (i === 0) return;
+  [HOME_SECTIONS[i], HOME_SECTIONS[i-1]] = [HOME_SECTIONS[i-1], HOME_SECTIONS[i]];
+  renderHomeSectionsList();
+  saveHomeSectionsToStorage();
+  renderHomeDynamicSections();
+}
+function moveSectionDown(i) {
+  if (i >= HOME_SECTIONS.length - 1) return;
+  [HOME_SECTIONS[i], HOME_SECTIONS[i+1]] = [HOME_SECTIONS[i+1], HOME_SECTIONS[i]];
+  renderHomeSectionsList();
+  saveHomeSectionsToStorage();
+  renderHomeDynamicSections();
 }
 
 function moveHomeSection(i, dir) {
-  const j = i + dir;
-  if (j<0||j>=HOME_SECTIONS.length) return;
-  [HOME_SECTIONS[i],HOME_SECTIONS[j]] = [HOME_SECTIONS[j],HOME_SECTIONS[i]];
-  renderHomeSectionsList();
-  // Also save - user still needs to press Aplicar to see on page
-  saveHomeSectionsToStorage();
+  if (dir < 0) moveSectionUp(i); else moveSectionDown(i);
 }
 
 function toggleHomeSection(i) {
@@ -3353,20 +4419,7 @@ function editHomeSectionTitle(i) {
   }
 }
 
-function addHomeSectionModal() {
-  const types = {'custom':'Sección de texto','carousel':'Carrusel de imágenes','media':'Video o Banner','banners':'Slider de banners'};
-  const keys = Object.keys(types);
-  const opts = keys.map((k,i)=>(i+1)+'. '+types[k]).join('\n');
-  const choice = prompt('¿Qué tipo de sección?\n\n'+opts+'\n\nIngresá el número:');
-  if (!choice) return;
-  const idx = parseInt(choice)-1;
-  if (idx<0||idx>=keys.length) { showToast('Opción inválida','error'); return; }
-  const type = keys[idx];
-  const title = prompt('Nombre de la sección:', types[type]) || types[type];
-  HOME_SECTIONS.push({id:'hs'+Date.now(), type, title, visible:true, locked:false, content:{}});
-  renderHomeSectionsList();
-  showToast('Sección agregada ✓','success');
-}
+// addHomeSectionModal handled by openAddSectionModal
 
 // ═══════════════════════ ADMIN USERS ═══════════════════════
 function showAdminUsers() {
@@ -3383,16 +4436,20 @@ async function renderAdminUsers() {
   el.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;"><i class="fas fa-spinner fa-spin"></i> Cargando...</td></tr>';
   try {
     let users = await apiFetch(API.users);
-    // Apply filters
     const roleF   = document.getElementById('usersFilterRole')?.value || '';
-    const catF    = document.getElementById('usersFilterCat')?.value || '';
     const searchF = document.getElementById('usersFilterSearch')?.value.toLowerCase() || '';
     if (roleF)   users = users.filter(u => u.role === roleF);
     if (searchF) users = users.filter(u => (u.username||'').toLowerCase().includes(searchF) || (u.email||'').toLowerCase().includes(searchF));
-    // catF filter would require purchase data - for now just filter by role
+    // Sort
+    users.sort((a,b)=>(a[adminUsersSort.col]||'').toString().localeCompare((b[adminUsersSort.col]||'').toString()) * (adminUsersSort.dir==='asc'?1:-1));
+    // Paginate
+    const total = users.length;
+    const pages = Math.ceil(total/ADMIN_USERS_PER_PAGE);
+    if (adminUsersPage > pages) adminUsersPage = 1;
+    const paged = users.slice((adminUsersPage-1)*ADMIN_USERS_PER_PAGE, adminUsersPage*ADMIN_USERS_PER_PAGE);
     const cnt = document.getElementById('adminUserCount');
-    if (cnt) cnt.textContent = `(${users.length})`;
-    el.innerHTML = users.length ? users.map(u => {
+    if (cnt) cnt.textContent = `(${total} — página ${adminUsersPage}/${pages||1})`;
+    el.innerHTML = paged.length ? paged.map(u => {
       const rc = ROLE_CONFIG[u.role] || ROLE_CONFIG.cliente;
       return `<tr>
         <td>
@@ -3423,6 +4480,18 @@ async function renderAdminUsers() {
         </td>
       </tr>`;
     }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">No hay usuarios registrados aún</td></tr>';
+    // Render pagination
+    let pag = document.getElementById('adminUsersPagination');
+    if (pag && pages > 1) {
+      let ph = `<div style="display:flex;gap:6px;justify-content:center;margin-top:16px;flex-wrap:wrap;">`;
+      ph += `<button class="pg-btn" ${adminUsersPage===1?'disabled':''} onclick="adminUsersPage=${adminUsersPage-1};renderAdminUsers()"><i class="fas fa-chevron-left"></i></button>`;
+      for (let i=1;i<=pages;i++) {
+        if(i===1||i===pages||Math.abs(i-adminUsersPage)<=1) ph+=`<button class="pg-btn ${i===adminUsersPage?'active':''}" onclick="adminUsersPage=${i};renderAdminUsers()">${i}</button>`;
+        else if(Math.abs(i-adminUsersPage)===2) ph+='<span class="pg-ellipsis">…</span>';
+      }
+      ph += `<button class="pg-btn" ${adminUsersPage===pages?'disabled':''} onclick="adminUsersPage=${adminUsersPage+1};renderAdminUsers()"><i class="fas fa-chevron-right"></i></button></div>`;
+      pag.innerHTML = ph;
+    } else if (pag) pag.innerHTML = '';
   } catch(e) {
     el.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--red);padding:20px;"><i class="fas fa-exclamation-circle"></i> Error cargando usuarios</td></tr>';
   }
@@ -3525,7 +4594,7 @@ function renderNavBtnsConfig() {
       <input type="text" value="${b.label}" onchange="SITE_CONFIG.navButtons[${i}].label=this.value"
         style="background:none;border:none;outline:none;color:var(--text);font-size:.85rem;font-weight:600;flex:1;"/>
       <label style="display:flex;align-items:center;gap:5px;font-size:.75rem;color:var(--muted);cursor:pointer;">
-        <input type="checkbox" ${b.visible?'checked':''} onchange="SITE_CONFIG.navButtons[${i}].visible=this.checked"
+        <input type="checkbox" ${b.visible?'checked':''} onchange="SITE_CONFIG.navButtons[${i}].visible=this.checked;renderTopbarNav();saveConfigToStorage()"
           style="accent-color:var(--primary);"/>
         Visible
       </label>
@@ -3538,11 +4607,15 @@ function moveNavBtn(i, dir) {
   if (j < 0 || j >= SITE_CONFIG.navButtons.length) return;
   [SITE_CONFIG.navButtons[i], SITE_CONFIG.navButtons[j]] = [SITE_CONFIG.navButtons[j], SITE_CONFIG.navButtons[i]];
   renderNavBtnsConfig();
+  renderTopbarNav(); // apply immediately to navbar
+  saveConfigToStorage(); // persist
 }
 
 function removeNavBtn(i) {
   SITE_CONFIG.navButtons.splice(i, 1);
   renderNavBtnsConfig();
+  renderTopbarNav();
+  saveConfigToStorage();
 }
 
 function openAddNavBtnModal() {
@@ -3808,6 +4881,7 @@ function showAdminInicio() {
   document.getElementById('sec-admin-inicio').classList.add('active');
   // Render ordered sections in panel
   renderAdminInicioSections();
+  renderAdminInicioCustomSections();
   // Load current values
   const videoIn = document.getElementById('videoUrlInput');
   if (videoIn) videoIn.value = videoUrl || '';
@@ -3839,6 +4913,107 @@ function renderAdminInicioSections() {
         <i class="fas fa-pen"></i> Modificar sección
       </button>
     </div>`).join('');
+}
+
+function renderAdminInicioCustomSections() {
+  const el = document.getElementById('adminInicioCustomSections');
+  if (!el) return;
+  const customSecs = HOME_SECTIONS.filter(s => s.type === 'layout' || (s.type === 'custom' && s.id !== 'hs1' && s.id !== 'hs2' && s.id !== 'hs3' && s.id !== 'hs4' && s.id !== 'hs5'));
+  if (!customSecs.length) {
+    el.innerHTML = '<p style="color:var(--muted);font-size:.83rem;">No hay secciones personalizadas. Creá una desde <b>Gestión Secciones Inicio</b>.</p>';
+    return;
+  }
+  el.innerHTML = customSecs.map(sec => `
+    <div style="display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:8px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-family:'Fraunces',serif;font-size:.88rem;font-weight:700;color:var(--text);">${sec.title}</div>
+        ${sec.layoutLabel ? `<div style="font-size:.68rem;color:var(--muted);">${sec.layoutLabel}${!sec.visible?' — OCULTA':''}</div>` : ''}
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="action-btn" onclick="openSectionEditor('${sec.id}','${sec.title}')"
+          style="border-color:rgba(62,166,255,.3);color:var(--primary);padding:7px 14px;white-space:nowrap;">
+          <i class="fas fa-pen"></i> Editar
+        </button>
+        <button class="action-btn" onclick="openBgEditor('${sec.id}')"
+          style="border-color:rgba(167,139,250,.3);color:#a78bfa;padding:7px 10px;white-space:nowrap;" title="Editar fondo de sección">
+          <i class="fas fa-fill-drip"></i>
+        </button>
+      </div>
+    </div>`).join('');
+}
+
+// ── Background editor ──
+let _bgTargetId = null;
+function openBgEditor(sectionId) {
+  _bgTargetId = sectionId;
+  const sec = HOME_SECTIONS.find(s=>s.id===sectionId);
+  const bg = sec?.background || {};
+  document.getElementById('bgEdType').value      = bg.type      || 'none';
+  document.getElementById('bgEdImgUrl').value    = bg.imgUrl    || '';
+  document.getElementById('bgEdOverlay').value   = bg.overlay   || 'none';
+  document.getElementById('bgEdGradDir').value   = bg.gradDir   || 'lr';
+  document.getElementById('bgEdColor1').value    = bg.color1    || '#ff8c42';
+  document.getElementById('bgEdColor2').value    = bg.color2    || '#3ea6ff';
+  document.getElementById('bgEdBlur').checked    = !!bg.blur;
+  document.getElementById('bgEdFullWidth').checked = bg.fullWidth !== false;
+  document.getElementById('bgEdCorners').value   = bg.corners   || 'square';
+  document.getElementById('bgEdOpacity').value   = bg.opacity != null ? bg.opacity : 1;
+  document.getElementById('bgEdOpacityVal').textContent = Math.round((bg.opacity!=null?bg.opacity:1)*100)+'%';
+  _toggleBgFields();
+  document.getElementById('bgEditorModal').classList.add('open');
+}
+function _toggleBgFields() {
+  const t = document.getElementById('bgEdType').value;
+  const isImg  = (t==='scroll'||t==='parallax');
+  const isGrad = t==='gradient';
+  document.getElementById('bgEdImgRow').style.display      = isImg  ? '' : 'none';
+  document.getElementById('bgEdOverlayRow').style.display  = isImg  ? '' : 'none';
+  document.getElementById('bgEdGradRow').style.display     = isGrad ? '' : 'none';
+  document.getElementById('bgEdEffectsRow').style.display  = isImg  ? '' : 'none';
+}
+function saveBgEditor() {
+  const sec = HOME_SECTIONS.find(s=>s.id===_bgTargetId);
+  if (!sec) return;
+  const t = document.getElementById('bgEdType').value;
+  sec.background = {
+    type:      t,
+    imgUrl:    document.getElementById('bgEdImgUrl').value.trim(),
+    overlay:   document.getElementById('bgEdOverlay').value,
+    gradDir:   document.getElementById('bgEdGradDir').value,
+    color1:    document.getElementById('bgEdColor1').value,
+    color2:    document.getElementById('bgEdColor2').value,
+    blur:      document.getElementById('bgEdBlur').checked,
+    fullWidth: document.getElementById('bgEdFullWidth').checked,
+    corners:   document.getElementById('bgEdCorners').value,
+    opacity:   parseFloat(document.getElementById('bgEdOpacity').value),
+  };
+  document.getElementById('bgEditorModal').classList.remove('open');
+  if (window._bgIsCourseBlock) {
+    window._bgIsCourseBlock = false;
+    const idx = window._courseBlockIdx;
+    if (idx != null && builderBlocks[idx]) {
+      builderBlocks[idx].background = {...sec.background, ...sec.background}; // will be set below
+      // Rebuild from form
+      const bg2 = {
+        type: document.getElementById('bgEdType').value,
+        imgUrl: document.getElementById('bgEdImgUrl').value.trim(),
+        overlay: document.getElementById('bgEdOverlay').value,
+        gradDir: document.getElementById('bgEdGradDir').value,
+        color1: document.getElementById('bgEdColor1').value,
+        color2: document.getElementById('bgEdColor2').value,
+        blur: document.getElementById('bgEdBlur').checked,
+        fullWidth: document.getElementById('bgEdFullWidth').checked,
+        corners: document.getElementById('bgEdCorners').value,
+        opacity: parseFloat(document.getElementById('bgEdOpacity').value),
+      };
+      builderBlocks[idx].background = bg2;
+    }
+    showToast('✓ Fondo del bloque guardado','success');
+    return;
+  }
+  renderHomeDynamicSections();
+  saveHomeSectionsToStorage();
+  showToast('✓ Fondo de sección guardado', 'success');
 }
 
 function toggleHeaderType() {
@@ -4336,53 +5511,47 @@ function showToast(msg,type='success') {
 init();
 </script>
 
-<!-- ═══ SECTION EDITOR OVERLAY ═══ -->
-<div class="section-editor-overlay" id="sectionEditorOverlay">
+<!-- ═══ SECTION EDITOR MODAL ═══ -->
+<div class="section-editor-overlay" id="sectionEditorOverlay" onclick="event.target===this&&event.stopPropagation()">
+  <div class="section-editor-box">
   <div class="section-editor-header">
-    <div style="flex:1;">
+    <div style="flex:1;min-width:0;">
       <div style="font-family:'Fraunces',serif;font-size:1rem;font-weight:800;color:var(--primary);" id="sectionEditorTitle">Editor de Sección</div>
-      <div style="font-size:.72rem;color:var(--muted);margin-top:2px;">Arrastrá los bloques para reordenarlos</div>
     </div>
-    <label style="display:flex;align-items:center;gap:6px;font-size:.8rem;color:var(--muted);cursor:pointer;">
-      <input type="checkbox" id="sectionEditorShowTitle" style="accent-color:var(--primary);"/>
-      Mostrar título de sección
-    </label>
-    <input class="form-input" id="sectionEditorTitleText" placeholder="Título de la sección" style="width:200px;margin-left:8px;"/>
-    <button class="btn-primary" style="background:linear-gradient(135deg,#059669,#34d399);margin-left:12px;" onclick="saveSectionEditor()">
-      <i class="fas fa-check"></i> Guardar cambios
+    <!-- Title config -->
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:4px;font-size:.75rem;color:var(--muted);cursor:pointer;white-space:nowrap;">
+        <input type="checkbox" id="sectionEditorShowTitle" style="accent-color:var(--primary);"/> Título visible
+      </label>
+      <input class="form-input" id="sectionEditorTitleText" placeholder="Nombre del título en inicio" style="width:160px;font-size:.82rem;"/>
+      <select class="filter-select" id="secEdTitleFont" style="font-size:.72rem;" title="Fuente del título">
+        <option value="fraunces">Serif</option>
+        <option value="sans">Sans</option>
+      </select>
+      <select class="filter-select" id="secEdTitleSize" style="font-size:.72rem;" title="Tamaño del título">
+        <option value="1rem">Normal</option>
+        <option value="1.1rem">Mediano</option>
+        <option value="1.3rem">Grande</option>
+        <option value="1.6rem">Muy grande</option>
+        <option value="2rem">Enorme</option>
+      </select>
+      <input type="color" id="secEdTitleColor" value="#1a2540" title="Color del título" style="width:28px;height:32px;border:none;border-radius:4px;cursor:pointer;"/>
+      <label style="display:flex;align-items:center;gap:3px;font-size:.72rem;color:var(--muted);cursor:pointer;">
+        <input type="checkbox" id="secEdTitleBold" checked style="accent-color:var(--primary);"/> <b>N</b>
+      </label>
+    </div>
+    <button class="btn-primary" style="background:linear-gradient(135deg,#059669,#34d399);margin-left:10px;white-space:nowrap;" onclick="saveSectionEditor()">
+      <i class="fas fa-check"></i> Guardar
     </button>
-    <button class="btn-ghost" onclick="closeSectionEditor()" style="margin-left:8px;">Cancelar</button>
+    <button class="btn-ghost" onclick="closeSectionEditor()" style="margin-left:6px;">✕</button>
   </div>
 
-  <!-- Preview area -->
+  <!-- Editor area -->
   <div class="section-editor-canvas">
-    <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:10px;">Vista previa</div>
-    <div class="section-editor-preview" id="sectionEditorPreview">
-      <div id="sectionEditorBlocks" style="display:flex;flex-direction:column;gap:12px;min-height:80px;"></div>
-    </div>
+    <div id="sectionEditorBlocks" style="min-height:80px;"></div>
   </div>
 
-  <!-- Toolbar -->
-  <div class="section-editor-tools">
-    <span style="font-size:.75rem;color:var(--muted);font-weight:600;">Agregar:</span>
-    <button class="action-btn" onclick="addEditorBlock('text')" style="border-color:rgba(62,166,255,.3);color:var(--primary);padding:7px 14px;">
-      <i class="fas fa-font"></i> Texto
-    </button>
-    <button class="action-btn" onclick="addEditorBlock('image')" style="border-color:rgba(167,139,250,.3);color:#a78bfa;padding:7px 14px;">
-      <i class="fas fa-image"></i> Imagen
-    </button>
-    <button class="action-btn" onclick="addEditorBlock('banner')" style="border-color:rgba(255,140,66,.3);color:var(--accent);padding:7px 14px;">
-      <i class="fas fa-panorama"></i> Banner completo
-    </button>
-    <button class="action-btn" onclick="addEditorBlock('carousel')" style="border-color:rgba(52,211,153,.3);color:var(--green);padding:7px 14px;">
-      <i class="fas fa-images"></i> Carrusel
-    </button>
-    <button class="action-btn" onclick="addEditorBlock('title')" style="padding:7px 14px;">
-      <i class="fas fa-heading"></i> Título
-    </button>
-    <div style="height:24px;width:1px;background:var(--border);margin:0 4px;"></div>
-    <span style="font-size:.72rem;color:var(--muted2);">Arrastrá los bloques para reordenarlos</span>
-  </div>
+  </div><!-- /section-editor-box -->
 </div>
 
 {% block extra_scripts %}{% endblock %}

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}DiartexAcademy — Cursos Online{% endblock %}
+{% block title %}DiartixAcademy — Cursos Online{% endblock %}
 
 {% block content %}
 
@@ -37,15 +37,17 @@
   </div>
   <div class="course-grid-square" id="featuredGrid"></div>
 
-  <!-- ¿QUÉ NOS MOTIVA? — dentro de sec-home para que solo aparezca en inicio -->
-  <div id="motivaSection" style="margin:32px 0;">
-    <div style="text-align:center;margin-bottom:20px;">
-      <h2 style="font-family:'Fraunces',serif;font-size:1.4rem;font-weight:800;color:var(--text);">¿Qué nos <span style="color:var(--primary);">motiva</span>?</h2>
+  <!-- Más Vendidos de Inicio (máx 8) -->
+  <div id="masVendidoHomeSection" style="display:none;">
+    <div class="sec-header centered" style="margin-top:24px;margin-bottom:14px;">
+      <div class="sec-title"><span>Más</span> Vendidos</div>
     </div>
-    <p id="motivaText" style="font-size:.95rem;color:var(--muted);line-height:1.8;text-align:center;max-width:700px;margin:0 auto;">
-      Creemos que el acceso al conocimiento es un derecho. Cada curso que creamos busca transformar vidas reales, con contenido práctico y de calidad.
-    </p>
+    <div class="course-grid-square" id="masVendidoHomeGrid"></div>
   </div>
+
+  <!-- Dynamic sections rendered by JS -->
+  <div id="homeDynamicSections"></div>
+
 </section>
 
 <!-- ALL COURSES -->
@@ -136,10 +138,21 @@
   </div>
   <div class="admin-block">
     <h3><i class="fas fa-list"></i> Lista de Cursos <span id="adminCursoCount" style="font-size:.8rem;color:var(--muted);font-family:'Plus Jakarta Sans',sans-serif;font-weight:400;"></span></h3>
-    <table class="admin-table">
-      <thead><tr><th>Título</th><th>Categoría</th><th>Estado</th><th>Acciones</th></tr></thead>
-      <tbody id="adminTableBody"></tbody>
-    </table>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="action-btn" onclick="checkAllLinks()" style="border-color:rgba(167,139,250,.3);color:#a78bfa;padding:7px 12px;">
+        <i class="fas fa-link"></i> Revisar todos los links
+      </button>
+      <button class="action-btn del" onclick="hideAllBroken()" style="padding:7px 12px;">
+        <i class="fas fa-eye-slash"></i> Ocultar todos los no funcionando
+      </button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="admin-table">
+        <thead><tr><th>Título</th><th>Categoría</th><th>Creado por</th><th>Fecha</th><th>Estado</th><th>Link</th><th>Acciones</th></tr></thead>
+        <tbody id="adminTableBody"></tbody>
+      </table>
+    </div>
+    <div id="adminCursosPagination"></div>
   </div>
 </section>
 
@@ -267,6 +280,15 @@
       <input class="form-input" id="heroImageUrl" placeholder="https://...imagen.jpg"/>
     </div>
   </div>
+
+  <!-- Secciones personalizadas -->
+  <div class="inicio-panel-card" id="adminInicioCustomCard">
+    <h4><i class="fas fa-layer-group" style="color:var(--primary);"></i> Secciones personalizadas</h4>
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">
+      Las secciones que creaste en <b>Gestión Secciones Inicio</b>. Presioná <b>Editar</b> para agregar el contenido.
+    </p>
+    <div id="adminInicioCustomSections"></div>
+  </div>
 </section>
 
 <!-- ADMIN: GESTIONAR CONTACTO -->
@@ -336,6 +358,7 @@
         <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Cargando...</td></tr>
       </tbody>
     </table>
+    <div id="adminUsersPagination"></div>
   </div>
 </section>
 
@@ -713,18 +736,21 @@
 <!-- SUPERADMIN: GESTIÓN INICIO -->
 <section class="page-sec" id="sec-admin-inicio-super">
   <div class="sec-header">
-    <div class="sec-title"><i class="fas fa-home" style="color:#e11d48;margin-right:8px;"></i>Gestión <span style="color:#e11d48;">Panel Inicio</span></div>
-    <button class="btn-primary" style="background:linear-gradient(135deg,#b91c1c,#e11d48);" onclick="addHomeSectionModal()">
-      <i class="fas fa-plus"></i> Agregar Sección
-    </button>
+    <div class="sec-title"><i class="fas fa-th-list" style="color:#e11d48;margin-right:8px;"></i>Gestión <span style="color:#e11d48;">Secciones Inicio</span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn-primary" style="background:linear-gradient(135deg,#b91c1c,#e11d48);" onclick="openAddSectionModal()">
+        <i class="fas fa-plus"></i> Agregar Sección
+      </button>
+      <button class="btn-primary" style="background:linear-gradient(135deg,#059669,#34d399);" onclick="applyHomeSections()">
+        <i class="fas fa-check"></i> Aplicar cambios
+      </button>
+    </div>
   </div>
   <div class="admin-block">
-    <h3><i class="fas fa-info-circle"></i> Secciones del Panel de Inicio</h3>
-    <p style="font-size:.82rem;color:var(--muted);margin-bottom:16px;">
-      Arrastrá o usá las flechas para reordenar. El <b style="color:#e11d48;">Superadmin</b> puede agregar, ocultar o eliminar secciones.
-      El <b style="color:var(--accent);">Admin</b> puede editar el contenido (banners, videos, textos) dentro de cada sección.
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">
+      Usá ▲▼ para reordenar. Presioná <b>Aplicar cambios</b> para guardar el orden y verlo en Inicio.
     </p>
-    <div id="homeSectionsList" style="display:flex;flex-direction:column;gap:10px;"></div>
+    <div id="homeSectionsList" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
 </section>
 
@@ -740,6 +766,122 @@
     <div class="empty-state"><i class="fas fa-spinner fa-spin"></i><p>Cargando estadísticas...</p></div>
   </div>
 </section>
+
+
+<!-- ═══ BACKGROUND EDITOR MODAL ═══ -->
+<div class="modal-overlay" id="bgEditorModal">
+  <div class="modal">
+    <button class="modal-close" onclick="document.getElementById('bgEditorModal').classList.remove('open')"><i class="fas fa-times"></i></button>
+    <h3><i class="fas fa-fill-drip" style="color:#a78bfa;"></i> Fondo de la sección</h3>
+
+    <div class="form-group">
+      <label class="form-label">Tipo de fondo</label>
+      <select class="form-select" id="bgEdType" onchange="_toggleBgFields()">
+        <option value="none">Sin fondo (transparente)</option>
+        <option value="scroll">Imagen de fondo (scroll normal)</option>
+        <option value="parallax">Imagen fija (efecto parallax)</option>
+        <option value="gradient">Degradado de color</option>
+      </select>
+    </div>
+
+    <div id="bgEdImgRow" class="form-group" style="display:none;">
+      <label class="form-label">URL de la imagen de fondo</label>
+      <input class="form-input" id="bgEdImgUrl" placeholder="https://...imagen.jpg"/>
+    </div>
+
+    <div id="bgEdOverlayRow" style="display:none;">
+      <div class="form-group">
+        <label class="form-label">Overlay sobre la imagen</label>
+        <select class="form-select" id="bgEdOverlay">
+          <option value="none">Sin overlay</option>
+          <option value="dark">Oscuro 35% (recomendado para texto)</option>
+          <option value="vignette">Viñeta / sombra interior</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="bgEdGradRow" style="display:none;">
+      <div class="form-group">
+        <label class="form-label">Dirección del degradado</label>
+        <select class="form-select" id="bgEdGradDir">
+          <option value="lr">Izquierda → Derecha</option>
+          <option value="rl">Derecha → Izquierda</option>
+          <option value="tb">Arriba → Abajo</option>
+          <option value="bt">Abajo → Arriba</option>
+        </select>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Color 1</label>
+          <input type="color" class="form-input" id="bgEdColor1" value="#ff8c42" style="height:42px;cursor:pointer;"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Color 2</label>
+          <input type="color" class="form-input" id="bgEdColor2" value="#3ea6ff" style="height:42px;cursor:pointer;"/>
+        </div>
+      </div>
+    </div>
+
+    <div id="bgEdEffectsRow" style="display:none;">
+      <div class="form-group" style="display:flex;flex-direction:column;gap:10px;">
+        <label class="form-label">Efectos</label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.85rem;">
+          <input type="checkbox" id="bgEdBlur" style="accent-color:var(--primary);width:16px;height:16px;"/>
+          Blur de 8px en el fondo
+        </label>
+      </div>
+    </div>
+
+    <!-- Common options -->
+    <div class="form-grid" style="margin-top:14px;">
+      <div class="form-group">
+        <label class="form-label">Esquinas</label>
+        <select class="form-select" id="bgEdCorners">
+          <option value="square">Cuadradas</option>
+          <option value="slight">Levemente redondeadas (6px)</option>
+          <option value="rounded">Redondeadas (14px)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:.82rem;margin-top:24px;">
+          <input type="checkbox" id="bgEdFullWidth" checked style="accent-color:var(--primary);width:16px;height:16px;"/>
+          Ancho completo (de borde a borde)
+        </label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Transparencia del fondo <span id="bgEdOpacityVal" style="color:var(--primary);font-weight:700;">100%</span></label>
+      <input type="range" id="bgEdOpacity" min="0.1" max="1" step="0.05" value="1" style="width:100%;accent-color:var(--primary);"
+        oninput="document.getElementById('bgEdOpacityVal').textContent=Math.round(this.value*100)+'%'"/>
+      <div class="form-hint">Útil si querés que se vea la imagen de fondo de la página a través de la sección</div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="document.getElementById('bgEditorModal').classList.remove('open')">Cancelar</button>
+      <button class="btn-primary" style="background:linear-gradient(135deg,#6d28d9,#a78bfa);" onclick="saveBgEditor()">
+        <i class="fas fa-check"></i> Guardar fondo
+      </button>
+    </div>
+  </div>
+</div>
+<!-- ═══ ADD SECTION LAYOUT PICKER MODAL ═══ -->
+<div class="modal-overlay" id="addSectionModal">
+  <div class="modal" style="width:min(720px,96vw);max-height:92vh;">
+    <button class="modal-close" onclick="document.getElementById('addSectionModal').classList.remove('open')"><i class="fas fa-times"></i></button>
+    <h3><i class="fas fa-plus-circle" style="color:var(--primary);"></i> Nueva Sección — Elegí el diseño</h3>
+    <div class="form-group" style="margin-bottom:14px;">
+      <label class="form-label">Nombre de la sección</label>
+      <input class="form-input" id="newSecName" placeholder="Ej: Nuestros beneficios, Sobre nosotros..."/>
+    </div>
+    <label class="form-label" style="margin-bottom:10px;">Tipo de sección</label>
+    <div id="addSectionModalGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;max-height:360px;overflow-y:auto;padding:4px 2px;margin-bottom:18px;"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="document.getElementById('addSectionModal').classList.remove('open')">Cancelar</button>
+      <button class="btn-primary" onclick="confirmAddSection()"><i class="fas fa-plus"></i> Crear sección</button>
+    </div>
+  </div>
+</div>
 
 {% endblock %}
 

@@ -3,6 +3,8 @@ from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden
 import openpyxl
 from django.http import HttpResponse
 from openpyxl import load_workbook
@@ -87,6 +89,19 @@ class CursoViewSet(viewsets.ModelViewSet):
         cursos = Curso.objects.filter(id__in=ids)
         return Response(CursoListSerializer(cursos, many=True).data)
 
+    @action(detail=True, methods=["patch"], url_path="guardar-pagina",
+        permission_classes=[permissions.IsAuthenticated])
+    def guardar_pagina(self, request, slug=None):
+        """Guarda el HTML/CSS/JSON generado por GrapesJS."""
+        if not _is_staff(request.user):
+            return Response({"error": "Sin permiso"}, status=403)
+        curso = self.get_object()
+        curso.page_html     = request.data.get("html",    curso.page_html or "")
+        curso.page_css      = request.data.get("css",     curso.page_css  or "")
+        curso.page_gjs_data = request.data.get("gjsData", curso.page_gjs_data)
+        curso.save(update_fields=["page_html", "page_css", "page_gjs_data"])
+        return Response({"ok": True, "slug": slug})
+
 
 # ── Vistas HTML ───────────────────────────────────────────────────────────────
 
@@ -101,6 +116,16 @@ def curso_page(request, slug):
     )
     return render(request, "curso_detalle.html", {"curso": curso})
 
+@login_required
+def curso_editor_view(request, slug):
+    """Página del editor visual GrapesJS."""
+    if not _is_staff(request.user):
+        return HttpResponseForbidden("Solo el staff puede editar páginas.")
+    curso = get_object_or_404(
+        Curso.objects.select_related("categoria"),
+        slug=slug,
+    )
+    return render(request, "curso_editor.html", {"curso": curso})
 
 # ── Excel export / import ─────────────────────────────────────────────────────
 

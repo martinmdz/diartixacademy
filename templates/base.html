@@ -2404,6 +2404,8 @@ async function showCourseDetail(id) {
     course.featured = detail.destacado;
     course.masvendido = detail.mas_vendido;
     course.hidden = detail.oculto;
+    course.page_html = detail.page_html || '';
+    course.page_css  = detail.page_css  || '';
   } catch(e) {
     console.warn('No se pudieron cargar los bloques desde la API', e);
     course.blocks = course.blocks || [];
@@ -2560,22 +2562,38 @@ async function showCourseDetail(id) {
     _showWa  ? (_waStyle ? `<a style="${_waStyle}" href="${waUrl}" target="_blank"><i class="fab fa-whatsapp"></i> Consultar por WhatsApp</a>` : `<a class="btn-wa" href="${waUrl}" target="_blank"><i class="fab fa-whatsapp"></i> Consultar por WhatsApp</a>`) : '',
   ].filter(Boolean).join('');
 
+  // ── GrapesJS slot: si hay page_html lo muestra, sino los bloques actuales ──
+  const _gjsHtml = course.page_html || '';
+  const _gjsCss  = course.page_css  || '';
+  const _isGjs   = !!_gjsHtml.trim();
+
+  const _contentSlot = _isGjs
+    ? `<style id="gjs-course-style">${_gjsCss}</style><div class="gjs-page-content">${_gjsHtml}</div>`
+    : `${blocksHtml}${_bottomBtns ? `<div class="detail-bottom-actions">${_bottomBtns}</div>` : ''}`;
+
+  const _editBtns = currentUser && ['admin','owner','superadmin'].includes(currentUser.role) ? `
+    <div style="display:flex;justify-content:center;gap:8px;margin:14px 0 6px;flex-wrap:wrap;">
+      <button class="action-btn" onclick="editCourse(${course.id})" style="border-color:rgba(62,166,255,.3);color:var(--primary);padding:8px 18px;">
+        <i class="fas fa-edit"></i> Editar bloques
+      </button>
+      <a href="/cursos/${course.slug}/editor/" target="_blank"
+        style="display:inline-flex;align-items:center;gap:7px;padding:8px 18px;border:1px solid rgba(52,211,153,.4);color:var(--green);border-radius:8px;font-size:.76rem;font-family:'Fraunces',serif;font-weight:700;text-decoration:none;cursor:pointer;transition:all .2s;"
+        onmouseover="this.style.background='rgba(52,211,153,.08)'" onmouseout="this.style.background=''">
+        <i class="fas fa-drafting-compass"></i> Editor visual (GrapesJS)
+      </a>
+      <button class="action-btn" onclick="openPageBgEditor('course',${course.id})" style="border-color:rgba(167,139,250,.3);color:#a78bfa;padding:8px 18px;">
+        <i class="fas fa-fill-drip"></i> Fondo de página
+      </button>
+    </div>` : '';
+
   document.getElementById('detailContent').innerHTML = `
     ${_bcHidden ? '' : `<div class="breadcrumb" style="${_bcStyle}">${buildBreadcrumbInner(course)}</div>`}
     ${_bannerHtml}
     ${!course.hideTitle ? `<div class="detail-title-wrap"><div class="detail-title">${course.title}</div></div>` : ""}
     ${_actionBtns ? `<div class="detail-actions">${_actionBtns}</div>` : ''}
-    ${blocksHtml}
-    ${_bottomBtns ? `<div class="detail-bottom-actions">${_bottomBtns}</div>` : ''}
-    ${currentUser && ['admin','owner','superadmin'].includes(currentUser.role) ? `
-    <div style="display:flex;justify-content:center;gap:10px;margin:16px 0 8px;flex-wrap:wrap;">
-      <button class="action-btn" onclick="editCourse(${course.id})" style="border-color:rgba(62,166,255,.3);color:var(--primary);padding:8px 18px;">
-        <i class="fas fa-edit"></i> Editar página
-      </button>
-      <button class="action-btn" onclick="openPageBgEditor('course',${course.id})" style="border-color:rgba(167,139,250,.3);color:#a78bfa;padding:8px 18px;">
-        <i class="fas fa-fill-drip"></i> Editar fondo de página
-      </button>
-    </div>` : ''}`;
+    <div id="courseContentSlot">${_contentSlot}</div>
+    ${_editBtns}
+  `;
 
   // Apply page background for this course
   applyPageBackground('course', course.id);

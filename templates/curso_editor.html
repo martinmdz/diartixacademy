@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Editor visual — {{ curso.titulo }}</title>
+
+<!-- GrapesJS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/grapesjs/0.21.7/css/grapes.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/grapesjs/0.21.7/grapes.min.js"></script>
+
+<!-- Fuentes -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,700;9..144,800;9..144,900&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100vh;overflow:hidden;font-family:'Plus Jakarta Sans',sans-serif;}
+
+/* ── Top bar ── */
+#topbar{
+  height:50px;background:#0d1220;border-bottom:1px solid #1a2540;
+  display:flex;align-items:center;padding:0 14px;gap:8px;flex-shrink:0;z-index:1000;
+  position:relative;
+}
+#topbar-title{color:#3ea6ff;font-size:.85rem;font-weight:700;font-family:'Fraunces',serif;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tb-btn{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+  color:#ccd6f6;padding:5px 12px;border-radius:7px;cursor:pointer;
+  font-size:.75rem;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;
+  display:inline-flex;align-items:center;gap:5px;transition:background .2s;white-space:nowrap;
+}
+.tb-btn:hover{background:rgba(255,255,255,.16);}
+.tb-btn.green{background:linear-gradient(135deg,#059669,#34d399);border-color:transparent;color:#fff;}
+.tb-btn.green:hover{filter:brightness(1.1);}
+.tb-btn:disabled{opacity:.5;cursor:not-allowed;}
+.tb-sep{width:1px;height:28px;background:rgba(255,255,255,.12);flex-shrink:0;}
+.dev-btn{background:none;border:1px solid rgba(255,255,255,.12);color:#6a7fa8;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:.75rem;transition:all .2s;}
+.dev-btn.active,.dev-btn:hover{border-color:#3ea6ff;color:#3ea6ff;}
+
+/* ── Editor layout ── */
+#editor-wrap{
+  display:flex;
+  height:calc(100vh - 50px);
+}
+#blocks-panel{
+  width:220px;
+  flex-shrink:0;
+  background:#0d1220;
+  border-right:1px solid #1a2540;
+  overflow-y:auto;
+}
+#blocks-panel::-webkit-scrollbar{width:4px;}
+#blocks-panel::-webkit-scrollbar-thumb{background:#1a2540;}
+#gjs{flex:1;min-width:0;}
+#styles-panel{
+  width:260px;
+  flex-shrink:0;
+  background:#0d1220;
+  border-left:1px solid #1a2540;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+}
+#styles-panel::-webkit-scrollbar{width:4px;}
+#styles-panel::-webkit-scrollbar-thumb{background:#1a2540;}
+
+/* ── Panel tabs ── */
+.panel-tabs{display:flex;border-bottom:1px solid #1a2540;flex-shrink:0;}
+.panel-tab{flex:1;padding:8px 4px;background:none;border:none;color:#6a7fa8;font-size:.68rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;transition:all .2s;border-bottom:2px solid transparent;}
+.panel-tab.active{color:#3ea6ff;border-bottom-color:#3ea6ff;}
+.panel-content{display:none;flex:1;overflow-y:auto;}
+.panel-content.active{display:block;}
+
+/* ── Blocks panel custom ── */
+.block-cat{padding:8px 10px 4px;font-size:.6rem;color:#4a5a78;letter-spacing:1.5px;text-transform:uppercase;font-weight:700;}
+.block-item{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;color:#8a9ab8;font-size:.75rem;border-bottom:1px solid rgba(255,255,255,.04);transition:all .2s;}
+.block-item:hover{background:rgba(62,166,255,.08);color:#3ea6ff;}
+.block-item i{width:16px;text-align:center;font-size:.8rem;flex-shrink:0;}
+
+/* ── GrapesJS overrides ── */
+.gjs-cv-canvas{background:#1a2540!important;}
+.gjs-toolbar{background:#0d1220!important;border:1px solid #1a2540!important;}
+.gjs-toolbar-item{color:#8a9ab8!important;}
+.gjs-toolbar-item:hover{color:#3ea6ff!important;}
+.gjs-selected{outline:2px solid #3ea6ff!important;outline-offset:2px!important;}
+/* Style manager rendered in our panel */
+.gjs-sm-sector{border-bottom:1px solid #1a2540;padding:6px 0;}
+.gjs-sm-sector-title{background:#111827!important;color:#6a7fa8!important;font-size:.68rem!important;letter-spacing:1px!important;text-transform:uppercase!important;padding:8px 12px!important;cursor:pointer;}
+.gjs-sm-properties{background:#0d1220!important;padding:6px 10px!important;}
+.gjs-sm-label{color:#8a9ab8!important;font-size:.7rem!important;}
+.gjs-field{background:#111827!important;border:1px solid #1a2540!important;color:#e2e8f8!important;border-radius:5px!important;font-size:.78rem!important;}
+.gjs-field input,.gjs-field select,.gjs-field textarea{color:#e2e8f8!important;background:transparent!important;font-size:.78rem!important;}
+.gjs-sm-stack{background:#0d1220!important;}
+.gjs-clm-tag{background:#1a2540!important;color:#8a9ab8!important;}
+/* Layers */
+.gjs-layer-name{color:#ccd6f6!important;font-size:.74rem!important;}
+.gjs-layer{background:#111827!important;border-bottom:1px solid #0d1220!important;}
+.gjs-layer.gjs-selected{background:#1a2540!important;}
+.gjs-layer__icon{color:#6a7fa8!important;}
+/* Traits */
+.gjs-trt-trait{border-bottom:1px solid #1a2540;padding:6px 10px;}
+.gjs-trt-trait__label{color:#8a9ab8!important;font-size:.72rem!important;}
+
+/* ── Toast ── */
+#gjs-toast{
+  position:fixed;bottom:20px;right:20px;
+  background:#1e293b;color:#fff;padding:12px 20px;border-radius:10px;
+  font-size:.82rem;z-index:9999;transform:translateY(60px);opacity:0;
+  transition:all .3s;pointer-events:none;max-width:300px;
+  border:1px solid rgba(255,255,255,.1);
+}
+#gjs-toast.show{transform:translateY(0);opacity:1;}
+#gjs-toast.error{background:#7f1d1d;}
+#gjs-toast.success{background:#064e3b;}
+
+/* ── Saving ── */
+#saving-dot{width:8px;height:8px;border-radius:50%;background:#34d399;flex-shrink:0;transition:background .3s;}
+#saving-dot.dirty{background:#f0c060;}
+#saving-dot.saving{background:#3ea6ff;animation:pulse .8s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+  <div id="topbar-title">
+    <span style="color:#4a5a78;font-size:.7rem;">EDITOR</span> — {{ curso.titulo }}
+  </div>
+  <button class="dev-btn active" id="dev-desk" onclick="setDevice('desktop')">🖥 Desktop</button>
+  <button class="dev-btn" id="dev-tab" onclick="setDevice('tablet')">📱 Tablet</button>
+  <button class="dev-btn" id="dev-mob" onclick="setDevice('mobile')">📲 Móvil</button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" onclick="editor.runCommand('core:undo')" title="Deshacer (Ctrl+Z)">↩</button>
+  <button class="tb-btn" onclick="editor.runCommand('core:redo')" title="Rehacer">↪</button>
+  <button class="tb-btn" id="btn-preview" onclick="togglePreview()">👁 Preview</button>
+  <button class="tb-btn" onclick="clearPage()" style="color:#f87171;">🗑 Limpiar</button>
+  <div class="tb-sep"></div>
+  <div id="saving-dot"></div>
+  <span id="saving-label" style="font-size:.7rem;color:#6a7fa8;margin-right:4px;"></span>
+  <button class="tb-btn green" id="btn-save" onclick="savePage()">💾 Guardar</button>
+  <a href="/cursos/{{ curso.slug }}/" target="_blank" class="tb-btn" style="text-decoration:none;">🔗 Ver página</a>
+  <button class="tb-btn" onclick="history.back()">← Volver</button>
+</div>
+
+<!-- EDITOR WRAP -->
+<div id="editor-wrap">
+  <!-- Blocks panel (left) -->
+  <div id="blocks-panel">
+    <div class="block-cat">Layout</div>
+    <div class="block-item" onclick="addBlock('b-section')"><i class="fas fa-square"></i> Sección</div>
+    <div class="block-item" onclick="addBlock('b-2col')"><i class="fas fa-columns"></i> 2 Columnas</div>
+    <div class="block-item" onclick="addBlock('b-3col')"><i class="fas fa-th-large"></i> 3 Columnas</div>
+    <div class="block-item" onclick="addBlock('b-spacer')"><i class="fas fa-arrows-alt-v"></i> Espaciado</div>
+    <div class="block-item" onclick="addBlock('b-divider')"><i class="fas fa-minus"></i> Separador</div>
+    <div class="block-cat">Texto</div>
+    <div class="block-item" onclick="addBlock('b-title')"><i class="fas fa-heading"></i> Título H2</div>
+    <div class="block-item" onclick="addBlock('b-h3')"><i class="fas fa-heading"></i> Subtítulo H3</div>
+    <div class="block-item" onclick="addBlock('b-text')"><i class="fas fa-paragraph"></i> Párrafo</div>
+    <div class="block-item" onclick="addBlock('b-quote')"><i class="fas fa-quote-left"></i> Cita</div>
+    <div class="block-cat">Media</div>
+    <div class="block-item" onclick="addBlock('b-image')"><i class="fas fa-image"></i> Imagen</div>
+    <div class="block-item" onclick="addBlock('b-video')"><i class="fas fa-play-circle"></i> Video YouTube</div>
+    <div class="block-item" onclick="addBlock('b-banner')"><i class="fas fa-panorama"></i> Banner</div>
+    <div class="block-item" onclick="addBlock('b-gif')"><i class="fas fa-film"></i> GIF / mp4</div>
+    <div class="block-cat">Curso</div>
+    <div class="block-item" onclick="addBlock('b-hero')"><i class="fas fa-star"></i> Hero / Cabecera</div>
+    <div class="block-item" onclick="addBlock('b-checklist')"><i class="fas fa-check-square"></i> Qué aprenderás</div>
+    <div class="block-item" onclick="addBlock('b-testimonial')"><i class="fas fa-comment"></i> Testimonio</div>
+    <div class="block-item" onclick="addBlock('b-testimonials-group')"><i class="fas fa-comments"></i> Testimonios (3)</div>
+    <div class="block-item" onclick="addBlock('b-stats')"><i class="fas fa-chart-bar"></i> Estadísticas</div>
+    <div class="block-item" onclick="addBlock('b-button')"><i class="fas fa-hand-pointer"></i> Botón CTA</div>
+    <div class="block-item" onclick="addBlock('b-price')"><i class="fas fa-tag"></i> Precio</div>
+    <div class="block-item" onclick="addBlock('b-feature-cards')"><i class="fas fa-th"></i> Tarjetas features</div>
+  </div>
+
+  <!-- Canvas -->
+  <div id="gjs"></div>
+
+  <!-- Styles / Layers panel (right) -->
+  <div id="styles-panel">
+    <div class="panel-tabs">
+      <button class="panel-tab active" onclick="switchTab('styles')">Estilos</button>
+      <button class="panel-tab" onclick="switchTab('layers')">Capas</button>
+      <button class="panel-tab" onclick="switchTab('traits')">Atributos</button>
+    </div>
+    <div class="panel-content active" id="tab-styles"></div>
+    <div class="panel-content" id="tab-layers"></div>
+    <div class="panel-content" id="tab-traits"></div>
+  </div>
+</div>
+
+<div id="gjs-toast"></div>
+
+<script>
+// ── Datos del curso ───────────────────────────────────────────────────
+const CURSO_SLUG = '{{ curso.slug }}';
+const CSRF_TOKEN = '{{ csrf_token }}';
+const SAVE_URL   = `/api/catalog/cursos/${CURSO_SLUG}/guardar-pagina/`;
+
+// Estos valores los inyecta Django — el subrayado rojo del editor es normal, funciona bien
+const SAVED_GJS_DATA = {{ curso.page_gjs_data|default:'null'|safe }};
+const SAVED_HTML     = {{ curso.page_html|default:'""'|safe }};
+const SAVED_CSS      = {{ curso.page_css|default:'""'|safe }};
+
+// ── GrapesJS init ─────────────────────────────────────────────────────
+const editor = grapesjs.init({
+  container: '#gjs',
+  height: '100%',
+  width: 'auto',
+  fromElement: false,
+  storageManager: false,
+  noticeOnUnload: false,
+
+  // Cargar contenido guardado o empezar con sección vacía
+  components: (SAVED_GJS_DATA && SAVED_GJS_DATA.pages && SAVED_GJS_DATA.pages[0] && SAVED_GJS_DATA.pages[0].component)
+    ? SAVED_GJS_DATA.pages[0].component
+    : (SAVED_HTML || `
+      <section style="padding:60px 32px;min-height:200px;background:#f0f4fa;">
+        <div style="max-width:1100px;margin:0 auto;text-align:center;">
+          <h2 style="font-family:'Fraunces',serif;font-size:2.2rem;font-weight:800;color:#1a2540;margin-bottom:16px;">
+            Título del curso
+          </h2>
+          <p style="font-size:1rem;color:#5a6a8a;line-height:1.75;max-width:600px;margin:0 auto;">
+            Hacé clic en cualquier elemento para editarlo. Arrastrá bloques del panel izquierdo.
+          </p>
+        </div>
+      </section>`),
+  style: (SAVED_GJS_DATA && SAVED_GJS_DATA.styles) ? SAVED_GJS_DATA.styles : (SAVED_CSS || ''),
+
+  // Sin paneles por defecto — los manejamos nosotros
+  panels: { defaults: [] },
+
+  // Dispositivos
+  deviceManager: {
+    devices: [
+      { name:'desktop', width:'' },
+      { name:'tablet',  width:'768px',  widthMedia:'768px' },
+      { name:'mobile',  width:'375px',  widthMedia:'480px' },
+    ]
+  },
+
+  // Canvas con fuentes de DiartixAcademy
+  canvas: {
+    styles: [
+      'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,700;9..144,800;9..144,900&display=swap',
+      'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css',
+    ],
+  },
+
+  // Style manager integrado en nuestro panel derecho
+  styleManager: {
+    appendTo: '#tab-styles',
+    sectors: [
+      {
+        name:'Fondo', open:true,
+        properties:[
+          {property:'background-color', type:'color', label:'Color de fondo'},
+          {property:'background-image', type:'text',  label:'Imagen (url(...))', placeholder:"url('https://...')"},
+          {property:'background-size',  type:'select', label:'Tamaño', defaults:'cover',
+           options:[{value:'cover',name:'Cover'},{value:'contain',name:'Contain'},{value:'auto',name:'Auto'}]},
+          {property:'background-position', type:'select', label:'Posición', defaults:'center',
+           options:[{value:'center',name:'Centro'},{value:'top',name:'Arriba'},{value:'bottom',name:'Abajo'}]},
+          {property:'opacity', type:'slider', label:'Opacidad', defaults:'1', min:0, max:1, step:.01},
+          {property:'filter',  type:'text',   label:'Filtro (blur, brillo)', placeholder:'blur(4px) brightness(.8)'},
+        ]
+      },
+      {
+        name:'Tipografía', open:false,
+        properties:[
+          {property:'font-family', type:'select', label:'Fuente', defaults:"'Plus Jakarta Sans',sans-serif",
+           options:[
+             {value:"'Plus Jakarta Sans',sans-serif", name:'Plus Jakarta Sans'},
+             {value:"'Fraunces',serif",               name:'Fraunces (Serif)'},
+             {value:'Arial,sans-serif',               name:'Arial'},
+             {value:'Georgia,serif',                  name:'Georgia'},
+           ]},
+          {property:'font-size',   type:'text',  label:'Tamaño'},
+          {property:'font-weight', type:'select', label:'Peso', defaults:'400',
+           options:[{value:'300',name:'Light'},{value:'400',name:'Normal'},{value:'600',name:'SemiBold'},{value:'700',name:'Bold'},{value:'800',name:'ExtraBold'},{value:'900',name:'Black'}]},
+          {property:'color',       type:'color', label:'Color texto'},
+          {property:'text-align',  type:'radio', label:'Alineación',
+           options:[{value:'left',name:'←'},{value:'center',name:'↔'},{value:'right',name:'→'},{value:'justify',name:'≡'}]},
+          {property:'line-height',    type:'text', label:'Altura de línea'},
+          {property:'letter-spacing', type:'text', label:'Espacio letras'},
+          {property:'text-transform', type:'select', label:'Transformar',
+           options:[{value:'none',name:'Normal'},{value:'uppercase',name:'MAYÚS'},{value:'lowercase',name:'minús'},{value:'capitalize',name:'Capitalizar'}]},
+        ]
+      },
+      {
+        name:'Dimensiones', open:false,
+        properties:[
+          {property:'width',      type:'text', label:'Ancho'},
+          {property:'height',     type:'text', label:'Alto'},
+          {property:'min-height', type:'text', label:'Alto mínimo'},
+          {property:'max-width',  type:'text', label:'Ancho máximo'},
+          {
+            property:'padding', type:'composite', label:'Padding',
+            properties:[{property:'padding-top'},{property:'padding-right'},{property:'padding-bottom'},{property:'padding-left'}]
+          },
+          {
+            property:'margin', type:'composite', label:'Margin',
+            properties:[{property:'margin-top'},{property:'margin-right'},{property:'margin-bottom'},{property:'margin-left'}]
+          },
+        ]
+      },
+      {
+        name:'Bordes', open:false,
+        properties:[
+          {property:'border-radius', type:'text', label:'Radio bordes'},
+          {property:'border',        type:'text', label:'Borde', placeholder:'1px solid #dde3ef'},
+          {property:'box-shadow',    type:'text', label:'Sombra', placeholder:'0 4px 20px rgba(0,0,0,.15)'},
+        ]
+      },
+      {
+        name:'Layout (Flex)', open:false,
+        properties:[
+          {property:'display', type:'select', label:'Display', defaults:'block',
+           options:[{value:'block',name:'Block'},{value:'flex',name:'Flex'},{value:'grid',name:'Grid'},{value:'inline-block',name:'Inline-block'},{value:'none',name:'Ocultar'}]},
+          {property:'flex-direction', type:'select', label:'Flex dirección',
+           options:[{value:'row',name:'Fila →'},{value:'column',name:'Columna ↓'},{value:'row-reverse',name:'← Fila inv.'},{value:'column-reverse',name:'↑ Col inv.'}]},
+          {property:'align-items', type:'select', label:'Alinear',
+           options:[{value:'flex-start',name:'Inicio'},{value:'center',name:'Centro'},{value:'flex-end',name:'Fin'},{value:'stretch',name:'Estirar'}]},
+          {property:'justify-content', type:'select', label:'Justificar',
+           options:[{value:'flex-start',name:'Inicio'},{value:'center',name:'Centro'},{value:'flex-end',name:'Fin'},{value:'space-between',name:'Entre'},{value:'space-around',name:'Alrededor'}]},
+          {property:'gap',      type:'text', label:'Gap'},
+          {property:'flex-wrap',type:'select', label:'Wrap',
+           options:[{value:'nowrap',name:'Sin wrap'},{value:'wrap',name:'Wrap'}]},
+        ]
+      },
+      {
+        name:'Posición', open:false,
+        properties:[
+          {property:'position', type:'select', label:'Position',
+           options:[{value:'static',name:'Static'},{value:'relative',name:'Relative'},{value:'absolute',name:'Absolute'},{value:'fixed',name:'Fixed'},{value:'sticky',name:'Sticky'}]},
+          {property:'top',     type:'text', label:'Top'},
+          {property:'left',    type:'text', label:'Left'},
+          {property:'right',   type:'text', label:'Right'},
+          {property:'bottom',  type:'text', label:'Bottom'},
+          {property:'z-index', type:'integer', label:'Z-index'},
+          {property:'overflow', type:'select', label:'Overflow',
+           options:[{value:'visible',name:'Visible'},{value:'hidden',name:'Oculto'},{value:'auto',name:'Auto'},{value:'scroll',name:'Scroll'}]},
+        ]
+      },
+    ]
+  },
+
+  // Layers en nuestro panel
+  layerManager: { appendTo: '#tab-layers' },
+
+  // Traits en nuestro panel
+  traitManager: { appendTo: '#tab-traits' },
+});
+
+// ── CSS base en el canvas ─────────────────────────────────────────────
+editor.setStyle(`
+:root{
+  --primary:#1a7acc; --accent:#ff8c42; --text:#1a2540;
+  --muted:#5a6a8a; --panel:#ffffff; --gold:#d4920a;
+  --green:#16a34a; --red:#dc2626;
+}
+*{box-sizing:border-box;}
+body{font-family:'Plus Jakarta Sans',sans-serif;color:var(--text);background:#f0f4fa;margin:0;}
+h1,h2,h3,h4{font-family:'Fraunces',serif;font-weight:800;}
+img{max-width:100%;display:block;}
+a{text-decoration:none;}
+${SAVED_CSS || ''}
+`);
+
+// ── Bloques ───────────────────────────────────────────────────────────
+const BLOCKS = {
+  'b-section': {
+    label:'📦 Sección',
+    content:`<section style="padding:60px 32px;min-height:140px;position:relative;background:#fff;">
+      <div style="max-width:1100px;margin:0 auto;min-height:80px;"></div>
+    </section>`
+  },
+  'b-2col': {
+    label:'⬛⬛ 2 Columnas',
+    content:`<div style="display:flex;gap:24px;flex-wrap:wrap;padding:20px 0;">
+      <div style="flex:1;min-width:200px;padding:8px;">
+        <p style="color:#5a6a8a;">Columna izquierda — hacé clic para editar</p>
+      </div>
+      <div style="flex:1;min-width:200px;padding:8px;">
+        <p style="color:#5a6a8a;">Columna derecha — hacé clic para editar</p>
+      </div>
+    </div>`
+  },
+  'b-3col': {
+    label:'3 Columnas',
+    content:`<div style="display:flex;gap:20px;flex-wrap:wrap;padding:20px 0;">
+      <div style="flex:1;min-width:140px;padding:8px;"><p style="color:#5a6a8a;">Col 1</p></div>
+      <div style="flex:1;min-width:140px;padding:8px;"><p style="color:#5a6a8a;">Col 2</p></div>
+      <div style="flex:1;min-width:140px;padding:8px;"><p style="color:#5a6a8a;">Col 3</p></div>
+    </div>`
+  },
+  'b-spacer': {content:`<div style="height:48px;"></div>`},
+  'b-divider': {content:`<hr style="border:none;border-top:2px solid #dde3ef;margin:32px 0;"/>`},
+  'b-title': {
+    content:`<h2 style="font-family:'Fraunces',serif;font-size:2rem;font-weight:800;color:#1a2540;text-align:center;margin-bottom:14px;">Título de sección</h2>`
+  },
+  'b-h3': {
+    content:`<h3 style="font-family:'Fraunces',serif;font-size:1.3rem;font-weight:700;color:#1a2540;margin-bottom:10px;">Subtítulo</h3>`
+  },
+  'b-text': {
+    content:`<p style="font-size:1rem;color:#5a6a8a;line-height:1.75;margin-bottom:16px;">Escribí tu texto aquí. Hacé clic para editar.</p>`
+  },
+  'b-quote': {
+    content:`<blockquote style="border-left:4px solid #1a7acc;padding:12px 20px;background:rgba(62,166,255,.06);border-radius:0 10px 10px 0;font-style:italic;color:#5a6a8a;font-size:.95rem;line-height:1.7;">Tu cita destacada aquí.</blockquote>`
+  },
+  'b-image': {
+    content:`<img src="https://placehold.co/800x400?text=Imagen" alt="Imagen" style="width:100%;border-radius:12px;display:block;"/>`
+  },
+  'b-video': {
+    content:`<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:12px;overflow:hidden;">
+      <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" style="position:absolute;inset:0;width:100%;height:100%;border:none;" allowfullscreen></iframe>
+    </div>`
+  },
+  'b-banner': {
+    content:`<div style="width:100%;height:280px;border-radius:14px;overflow:hidden;background:linear-gradient(135deg,#1a2a50,#3ea6ff);display:flex;align-items:center;justify-content:center;">
+      <p style="color:#fff;font-family:'Fraunces',serif;font-size:1.5rem;font-weight:800;text-align:center;padding:0 24px;">Banner — editá el fondo desde el panel de estilos</p>
+    </div>`
+  },
+  'b-gif': {
+    content:`<div style="border-radius:12px;overflow:hidden;">
+      <img src="https://placehold.co/800x400?text=GIF+o+video" alt="GIF" style="width:100%;display:block;"/>
+    </div>`
+  },
+  'b-hero': {
+    content:`<div style="background:linear-gradient(135deg,#1a2a50,#0d1a38);padding:80px 32px;text-align:center;border-radius:16px;">
+      <h1 style="font-family:'Fraunces',serif;font-size:2.5rem;font-weight:900;color:#fff;margin-bottom:16px;">Nombre del curso</h1>
+      <p style="font-size:1.1rem;color:rgba(255,255,255,.8);max-width:600px;margin:0 auto 28px;line-height:1.7;">Descripción llamativa del curso.</p>
+      <a href="#" style="display:inline-block;padding:14px 36px;background:linear-gradient(135deg,#059669,#34d399);color:#fff;border-radius:12px;font-family:'Fraunces',serif;font-weight:700;font-size:1rem;">¡Quiero inscribirme!</a>
+    </div>`
+  },
+  'b-checklist': {
+    content:`<ul style="list-style:none;padding:0;display:flex;flex-direction:column;gap:10px;">
+      <li style="display:flex;gap:10px;align-items:flex-start;font-size:.9rem;color:#5a6a8a;padding:10px 14px;background:rgba(62,166,255,.05);border-radius:8px;border:1px solid rgba(62,166,255,.1);">
+        <span style="color:#1a7acc;font-weight:800;flex-shrink:0;">✓</span><span>Aprenderás a dominar este tema</span>
+      </li>
+      <li style="display:flex;gap:10px;align-items:flex-start;font-size:.9rem;color:#5a6a8a;padding:10px 14px;background:rgba(62,166,255,.05);border-radius:8px;border:1px solid rgba(62,166,255,.1);">
+        <span style="color:#1a7acc;font-weight:800;flex-shrink:0;">✓</span><span>Técnicas avanzadas paso a paso</span>
+      </li>
+      <li style="display:flex;gap:10px;align-items:flex-start;font-size:.9rem;color:#5a6a8a;padding:10px 14px;background:rgba(62,166,255,.05);border-radius:8px;border:1px solid rgba(62,166,255,.1);">
+        <span style="color:#1a7acc;font-weight:800;flex-shrink:0;">✓</span><span>Resultados reales y comprobados</span>
+      </li>
+    </ul>`
+  },
+  'b-testimonial': {
+    content:`<div style="background:rgba(0,0,0,.02);border:1px solid #dde3ef;border-radius:14px;padding:20px 22px;display:flex;gap:14px;align-items:flex-start;">
+      <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#1a7acc,#3ea6ff);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.9rem;font-weight:800;flex-shrink:0;">L</div>
+      <div>
+        <div style="color:#d4920a;font-size:.85rem;margin-bottom:6px;">★★★★★</div>
+        <p style="font-size:.9rem;color:#5a6a8a;line-height:1.6;font-style:italic;margin-bottom:8px;">"Excelente curso, superó mis expectativas."</p>
+        <p style="font-family:'Fraunces',serif;font-size:.78rem;font-weight:700;color:#1a7acc;">— Laura García</p>
+      </div>
+    </div>`
+  },
+  'b-testimonials-group': {
+    content:`<div style="display:flex;flex-direction:column;gap:14px;">
+      <div style="background:rgba(0,0,0,.02);border:1px solid #dde3ef;border-radius:14px;padding:18px;display:flex;gap:12px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#1a7acc,#3ea6ff);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;flex-shrink:0;">L</div>
+        <div><div style="color:#d4920a;font-size:.8rem;margin-bottom:4px;">★★★★★</div><p style="font-size:.87rem;color:#5a6a8a;font-style:italic;margin-bottom:5px;">"Increíble curso."</p><p style="font-family:'Fraunces',serif;font-size:.75rem;font-weight:700;color:#1a7acc;">— Laura G.</p></div>
+      </div>
+      <div style="background:rgba(0,0,0,.02);border:1px solid #dde3ef;border-radius:14px;padding:18px;display:flex;gap:12px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#059669,#34d399);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;flex-shrink:0;">C</div>
+        <div><div style="color:#d4920a;font-size:.8rem;margin-bottom:4px;">★★★★★</div><p style="font-size:.87rem;color:#5a6a8a;font-style:italic;margin-bottom:5px;">"Lo recomiendo."</p><p style="font-family:'Fraunces',serif;font-size:.75rem;font-weight:700;color:#1a7acc;">— Carlos M.</p></div>
+      </div>
+      <div style="background:rgba(0,0,0,.02);border:1px solid #dde3ef;border-radius:14px;padding:18px;display:flex;gap:12px;">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#a78bfa);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;flex-shrink:0;">A</div>
+        <div><div style="color:#d4920a;font-size:.8rem;margin-bottom:4px;">★★★★★</div><p style="font-size:.87rem;color:#5a6a8a;font-style:italic;margin-bottom:5px;">"Cambió mi vida."</p><p style="font-family:'Fraunces',serif;font-size:.75rem;font-weight:700;color:#1a7acc;">— Ana R.</p></div>
+      </div>
+    </div>`
+  },
+  'b-stats': {
+    content:`<div style="display:flex;gap:24px;flex-wrap:wrap;justify-content:center;padding:24px 0;">
+      <div style="text-align:center;"><div style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:800;color:#1a7acc;">📚 28</div><div style="font-size:.7rem;color:#5a6a8a;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">Cursos</div></div>
+      <div style="text-align:center;"><div style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:800;color:#1a7acc;">⭐ 4.9</div><div style="font-size:.7rem;color:#5a6a8a;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">Valoración</div></div>
+      <div style="text-align:center;"><div style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:800;color:#1a7acc;">👩‍🎓 +500</div><div style="font-size:.7rem;color:#5a6a8a;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">Estudiantes</div></div>
+      <div style="text-align:center;"><div style="font-family:'Fraunces',serif;font-size:1.6rem;font-weight:800;color:#1a7acc;">💯 100%</div><div style="font-size:.7rem;color:#5a6a8a;text-transform:uppercase;letter-spacing:1px;margin-top:4px;">Online</div></div>
+    </div>`
+  },
+  'b-button': {
+    content:`<div style="text-align:center;padding:16px 0;">
+      <a href="#" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg,#1a7acc,#3ea6ff);color:#fff;border-radius:12px;font-family:'Fraunces',serif;font-weight:700;font-size:1rem;text-decoration:none;cursor:pointer;">Comprar ahora</a>
+    </div>`
+  },
+  'b-price': {
+    content:`<div style="text-align:center;padding:24px;background:rgba(52,211,153,.08);border:2px solid rgba(52,211,153,.3);border-radius:16px;">
+      <div style="font-size:.85rem;color:#5a6a8a;margin-bottom:4px;">Precio especial</div>
+      <div style="font-family:'Fraunces',serif;font-size:2.5rem;font-weight:900;color:#1a7acc;">$29.99</div>
+      <div style="font-size:.8rem;color:#16a34a;margin-top:4px;font-weight:600;">✓ Acceso de por vida</div>
+    </div>`
+  },
+  'b-feature-cards': {
+    content:`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:20px;">
+      <div style="background:#fff;border:1px solid #dde3ef;border-radius:14px;padding:24px;text-align:center;box-shadow:0 2px 16px rgba(0,0,0,.06);">
+        <div style="font-size:2rem;margin-bottom:12px;">🎯</div>
+        <h4 style="font-family:'Fraunces',serif;font-weight:800;color:#1a2540;margin-bottom:8px;font-size:.95rem;">Objetivo claro</h4>
+        <p style="font-size:.82rem;color:#5a6a8a;line-height:1.6;">Sabés exactamente qué vas a lograr.</p>
+      </div>
+      <div style="background:#fff;border:1px solid #dde3ef;border-radius:14px;padding:24px;text-align:center;box-shadow:0 2px 16px rgba(0,0,0,.06);">
+        <div style="font-size:2rem;margin-bottom:12px;">⚡</div>
+        <h4 style="font-family:'Fraunces',serif;font-weight:800;color:#1a2540;margin-bottom:8px;font-size:.95rem;">Resultados rápidos</h4>
+        <p style="font-size:.82rem;color:#5a6a8a;line-height:1.6;">Mejorás desde la primera semana.</p>
+      </div>
+      <div style="background:#fff;border:1px solid #dde3ef;border-radius:14px;padding:24px;text-align:center;box-shadow:0 2px 16px rgba(0,0,0,.06);">
+        <div style="font-size:2rem;margin-bottom:12px;">🏆</div>
+        <h4 style="font-family:'Fraunces',serif;font-weight:800;color:#1a2540;margin-bottom:8px;font-size:.95rem;">Probado y efectivo</h4>
+        <p style="font-size:.82rem;color:#5a6a8a;line-height:1.6;">Miles de alumnos ya lo comprobaron.</p>
+      </div>
+    </div>`
+  },
+};
+
+// Función para agregar bloque al canvas
+function addBlock(id) {
+  const block = BLOCKS[id];
+  if (!block) return;
+  const selected = editor.getSelected();
+  if (selected) {
+    selected.append(block.content);
+  } else {
+    // Agregar al wrapper principal
+    const wrapper = editor.getWrapper();
+    wrapper.append(block.content);
+  }
+}
+
+// ── Tabs del panel derecho ────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.panel-tab').forEach((t,i) => {
+    const names = ['styles','layers','traits'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.panel-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+// ── Dirty state ───────────────────────────────────────────────────────
+let isDirty = false;
+editor.on('change:changesCount', () => {
+  if (!isDirty) {
+    isDirty = true;
+    document.getElementById('saving-dot').className = 'dirty';
+    document.getElementById('saving-label').textContent = 'Sin guardar';
+  }
+});
+
+// ── Guardar ───────────────────────────────────────────────────────────
+async function savePage() {
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  document.getElementById('saving-dot').className = 'saving';
+  document.getElementById('saving-label').textContent = 'Guardando...';
+  try {
+    const html    = editor.getHtml();
+    const css     = editor.getCss({ avoidProtected: true });
+    const gjsData = editor.getProjectData();
+    const res = await fetch(SAVE_URL, {
+      method: 'PATCH',
+      headers: { 'Content-Type':'application/json', 'X-CSRFToken': CSRF_TOKEN },
+      credentials: 'same-origin',
+      body: JSON.stringify({ html, css, gjsData }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'HTTP ' + res.status }));
+      throw new Error(err.detail || 'HTTP ' + res.status);
+    }
+    isDirty = false;
+    document.getElementById('saving-dot').className = '';
+    document.getElementById('saving-label').textContent = 'Guardado ✓';
+    setTimeout(() => { document.getElementById('saving-label').textContent = ''; }, 3000);
+    showToast('✅ Página guardada', 'success');
+  } catch(e) {
+    document.getElementById('saving-dot').className = 'dirty';
+    document.getElementById('saving-label').textContent = 'Error';
+    showToast('❌ Error al guardar: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// Ctrl+S
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); savePage(); }
+});
+// Auto-guardado 3 min
+setInterval(() => { if (isDirty) savePage(); }, 3 * 60 * 1000);
+// Aviso al salir
+window.addEventListener('beforeunload', e => { if (isDirty) { e.preventDefault(); e.returnValue = ''; } });
+
+// ── Preview ───────────────────────────────────────────────────────────
+let inPreview = false;
+function togglePreview() {
+  inPreview = !inPreview;
+  if (inPreview) {
+    editor.runCommand('core:preview');
+    document.getElementById('btn-preview').textContent = '✏️ Editar';
+  } else {
+    editor.stopCommand('core:preview');
+    document.getElementById('btn-preview').textContent = '👁 Preview';
+  }
+}
+
+// ── Dispositivos ──────────────────────────────────────────────────────
+function setDevice(name) {
+  editor.setDevice(name);
+  document.querySelectorAll('.dev-btn').forEach(b => b.classList.remove('active'));
+  const map = { desktop:'dev-desk', tablet:'dev-tab', mobile:'dev-mob' };
+  document.getElementById(map[name]).classList.add('active');
+}
+
+// ── Limpiar ───────────────────────────────────────────────────────────
+function clearPage() {
+  if (!confirm('¿Limpiar toda la página? Perderás el contenido actual.')) return;
+  editor.setComponents(`
+    <section style="padding:60px 32px;min-height:200px;background:#fff;">
+      <div style="max-width:1100px;margin:0 auto;text-align:center;">
+        <h2 style="font-family:'Fraunces',serif;font-size:2rem;font-weight:800;color:#1a2540;">Página vacía</h2>
+        <p style="color:#5a6a8a;margin-top:12px;">Arrastrá bloques desde el panel izquierdo.</p>
+      </div>
+    </section>`);
+  isDirty = true;
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────
+let _toastTimer;
+function showToast(msg, type = '') {
+  const t = document.getElementById('gjs-toast');
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+</script>
+</body>
+</html>

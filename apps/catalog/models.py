@@ -37,6 +37,10 @@ class Curso(models.Model):
     oculto            = models.BooleanField(default=False)
     creado            = models.DateTimeField(auto_now_add=True)
     actualizado       = models.DateTimeField(auto_now=True)
+    # Página GrapesJS
+    page_html     = models.TextField(blank=True, default='',   verbose_name='HTML de página (GrapesJS)')
+    page_css      = models.TextField(blank=True, default='',   verbose_name='CSS de página (GrapesJS)')
+    page_gjs_data = models.JSONField(blank=True, null=True,    verbose_name='Datos GrapesJS (JSON)')
 
     class Meta:
         indexes = [

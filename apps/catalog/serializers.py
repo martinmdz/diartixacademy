@@ -26,14 +26,19 @@ class CursoListSerializer(serializers.ModelSerializer):
             "categoria", "categoria_nombre", "categoria_key", "categoria_color",
             "emoji", "imagen_card", "imagen_banner", "buy_url", "buy_text", "whatsapp",
             "destacado", "mas_vendido", "oculto", "creado",
+            'page_html', 'page_css', 'page_gjs_data',
         )
 
 
 class CursoDetailSerializer(CursoListSerializer):
     bloques = BloqueSerializer(many=True, read_only=True)
+    page_html     = serializers.CharField(default='',   allow_blank=True)
+    page_css      = serializers.CharField(default='',   allow_blank=True)
+    page_gjs_data = serializers.JSONField(default=None, allow_null=True)
 
     class Meta(CursoListSerializer.Meta):
         fields = CursoListSerializer.Meta.fields + ("descripcion", "bloques")
+        
 
 
 class BloqueWriteSerializer(serializers.Serializer):
@@ -63,6 +68,7 @@ class CursoWriteSerializer(serializers.ModelSerializer):
             "buy_url", "buy_text", "whatsapp",
             "destacado", "mas_vendido", "oculto",
             "bloques",
+            'page_html', 'page_css', 'page_gjs_data',
         )
         extra_kwargs = {
             'slug':   {'required': False},

@@ -8,49 +8,8 @@
   <button id="homeBgEditBtn" style="display:none;position:fixed;bottom:80px;right:20px;background:rgba(10,13,26,.85);border:1px solid rgba(167,139,250,.3);color:#a78bfa;padding:8px 14px;border-radius:20px;font-size:.75rem;cursor:pointer;z-index:50;backdrop-filter:blur(6px);" onclick="openPageBgEditor('home')">
     <i class="fas fa-fill-drip"></i> Fondo
   </button>
-  <div id="videoHeaderWrap"></div>
-  <div class="home-hero" id="homeHero">
-    <div class="home-hero-left">
-      <h1 id="homeHeroTitle">Aprendé sin límites con <span>DiartixAcademy</span></h1>
-      <p id="homeHeroDesc">Cursos de calidad en bienestar, educación, desarrollo personal y emprendimiento. Todo lo que necesitás para crecer y transformar tu vida.</p>
-      <!-- Stats row — rendered dynamically by renderHeroStatsOnPage() -->
-      <div class="hero-stats" id="heroStatsRow">
-        <div class="h-stat"><div class="num">📚 0</div><div class="lbl">Cursos</div></div>
-        <div class="h-stat"><div class="num">🗂 0</div><div class="lbl">Categorías</div></div>
-        <div class="h-stat"><div class="num">⭐ 4.9</div><div class="lbl">Valoración</div></div>
-        <div class="h-stat"><div class="num">💯 100%</div><div class="lbl">Online</div></div>
-      </div>
-    </div>
-    <div class="home-hero-right">
-      <div class="hero-image-placeholder" id="heroImageWrap">
-        <span style="font-size:4rem;">🎓</span>
-      </div>
-      <div class="hero-motivational-icon">💡</div>
-      <h3 id="homeMotivTitle">El conocimiento es poder</h3>
-      <p id="homeMotivText">Cada curso que terminás es un paso más hacia la versión que querés ser. Invertir en vos mismo es la mejor inversión que existe.</p>
-    </div>
-  </div>
-  <div id="bannerSliderWrap"></div>
-  <div class="sec-header centered" style="margin-bottom:14px;">
-    <div class="sec-title" id="exploreCatsTitle">Explorar <span>Categorías</span></div>
-  </div>
-  <div class="cat-explore-grid" id="catExploreGrid"></div>
-  <div class="sec-header centered">
-    <div class="sec-title" id="featuredCoursesTitle">Cursos <span>Destacados</span></div>
-  </div>
-  <div class="course-grid-square" id="featuredGrid"></div>
-
-  <!-- Más Vendidos de Inicio (máx 8) -->
-  <div id="masVendidoHomeSection" style="display:none;">
-    <div class="sec-header centered" style="margin-top:24px;margin-bottom:14px;">
-      <div class="sec-title"><span>Más</span> Vendidos</div>
-    </div>
-    <div class="course-grid-square" id="masVendidoHomeGrid"></div>
-  </div>
-
-  <!-- Dynamic sections rendered by JS -->
+  <!-- All sections rendered dynamically by renderHomeDynamicSections() -->
   <div id="homeDynamicSections"></div>
-
 </section>
 
 <!-- ALL COURSES -->
@@ -193,117 +152,21 @@
 <section class="page-sec" id="sec-admin-inicio">
   <div class="sec-header">
     <div class="sec-title"><i class="fas fa-home" style="color:var(--accent);margin-right:8px;"></i>Panel <span style="color:var(--accent);">Inicio</span></div>
-    <button class="btn-primary" onclick="applyAdminInicio()"><i class="fas fa-check"></i> Aplicar cambios</button>
-  </div>
-
-  <!-- Cabecera: Video o Banner -->
-  <div class="inicio-panel-card">
-    <h4><i class="fas fa-photo-video"></i> Cabecera de la Página</h4>
-    <div class="form-group">
-      <label class="form-label">Tipo de cabecera</label>
-      <select class="form-select" id="headerType" onchange="toggleHeaderType()">
-        <option value="video">Video (YouTube embed o mp4)</option>
-        <option value="banner">Banner único (imagen)</option>
-        <option value="carousel">Carrusel de banners</option>
-        <option value="none">Sin cabecera</option>
-      </select>
-    </div>
-    <div id="headerVideoOpts">
-      <div class="form-group">
-        <label class="form-label">URL del video</label>
-        <input class="form-input" id="videoUrlInput" placeholder="https://www.youtube.com/embed/..."/>
-        <div class="form-hint">YouTube embed o link directo a .mp4</div>
-      </div>
-    </div>
-    <div id="headerBannerOpts" style="display:none;">
-      <div class="form-group">
-        <label class="form-label">URL de la imagen de banner</label>
-        <input class="form-input" id="bannerHeaderUrl" placeholder="https://...imagen.jpg"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Texto sobre el banner (opcional)</label>
-        <input class="form-input" id="bannerHeaderText" placeholder="Bienvenido a DiartixAcademy"/>
-      </div>
-    </div>
-    <div id="headerCarouselOpts" style="display:none;">
-      <div id="carouselHeaderList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
-      <button class="action-btn" onclick="addCarouselHeaderItem()" style="border-color:rgba(62,166,255,.3);color:var(--primary);padding:8px 14px;">
-        <i class="fas fa-plus"></i> Agregar imagen al carrusel
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn-primary" style="background:linear-gradient(135deg,#b91c1c,#e11d48);" onclick="showAdminInicioSuper()">
+        <i class="fas fa-th-list"></i> Gestión de Secciones
+      </button>
+      <button class="btn-primary" style="background:linear-gradient(135deg,#6d28d9,#a78bfa);" onclick="openPageBgEditor('home')">
+        <i class="fas fa-fill-drip"></i> Fondo de Inicio
       </button>
     </div>
   </div>
-
-  <!-- Título principal del Hero -->
-  <div class="inicio-panel-card">
-    <h4><i class="fas fa-heading"></i> Títulos Principales</h4>
-    <div class="form-group">
-      <label class="form-label">Título del Hero (grande)</label>
-      <input class="form-input" id="heroTitleInput" placeholder="Aprendé sin límites con DiartixAcademy"/>
-      <div class="form-hint">Este es el título H1 principal de la página de inicio.</div>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Título "El conocimiento es poder" (derecha)</label>
-      <input class="form-input" id="heroMotivTitleInput" placeholder="El conocimiento es poder"/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Título sección "Explorar Categorías"</label>
-      <input class="form-input" id="exploreCatsTitleInput" placeholder="Explorar Categorías"/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Título sección "Cursos Destacados"</label>
-      <input class="form-input" id="featuredTitleInput" placeholder="Cursos Destacados"/>
-    </div>
-  </div>
-
-  <!-- Estadísticas del Hero -->
-  <div class="inicio-panel-card">
-    <h4><i class="fas fa-chart-bar"></i> Estadísticas (sección horizontal con números)</h4>
-    <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">Los 4 recuadros con números debajo del título principal.</p>
-    <div id="heroStatsList" style="display:flex;flex-direction:column;gap:10px;"></div>
-    <button class="action-btn" onclick="addHeroStat()" style="margin-top:10px;border-color:rgba(62,166,255,.3);color:var(--primary);padding:8px 14px;">
-      <i class="fas fa-plus"></i> Agregar estadística
-    </button>
-  </div>
-
-  <!-- Textos del Hero -->
-  <div class="inicio-panel-card">
-    <h4><i class="fas fa-align-left"></i> Textos descriptivos</h4>
-    <div class="form-group">
-      <label class="form-label">Descripción principal (debajo del título grande)</label>
-      <textarea class="form-textarea" id="heroDescInput" rows="3" placeholder="Cursos de calidad en bienestar, educación..."></textarea>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Texto motivacional (columna derecha, debajo del título)</label>
-      <textarea class="form-textarea" id="heroMotivInput" rows="3" placeholder="Cada curso que terminás es un paso más..."></textarea>
-    </div>
-  </div>
-
-  <!-- Imagen del Hero -->
-  <div class="inicio-panel-card">
-    <h4><i class="fas fa-image"></i> Imagen del Hero (columna derecha)</h4>
-    <div class="form-group">
-      <label class="form-label">URL de imagen</label>
-      <input class="form-input" id="heroImageUrl" placeholder="https://...imagen.jpg"/>
-    </div>
-  </div>
-
-  <!-- Secciones personalizadas -->
-  <div class="inicio-panel-card" id="adminInicioCustomCard">
-    <h4><i class="fas fa-layer-group" style="color:var(--primary);"></i> Secciones personalizadas</h4>
-    <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">
-      Las secciones que creaste en <b>Gestión Secciones Inicio</b>. Presioná <b>Editar</b> para agregar el contenido.
+  <div class="admin-block">
+    <h3><i class="fas fa-layer-group"></i> Secciones personalizadas</h3>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">
+      Editá el contenido y fondo de cada sección. Para agregar o reordenar, usá <b>Gestión de Secciones</b>.
     </p>
-    <div id="adminInicioCustomSections"></div>
-  </div>
-
-  <div class="inicio-panel-card">
-    <h4><i class="fas fa-fill-drip" style="color:#a78bfa;"></i> Fondo de la Página de Inicio</h4>
-    <p style="font-size:.8rem;color:var(--muted);margin-bottom:14px;">
-      Personalizá el fondo general de la página de inicio. Podés usar imagen, color o degradado.
-    </p>
-    <button class="btn-primary" style="background:linear-gradient(135deg,#6d28d9,#a78bfa);" onclick="openPageBgEditor('home')">
-      <i class="fas fa-fill-drip"></i> Editar fondo de inicio
-    </button>
+    <div id="adminInicioSectionsList" style="display:flex;flex-direction:column;gap:8px;"></div>
   </div>
 </section>
 
@@ -681,26 +544,8 @@
   <!-- Navbar -->
   <div class="admin-block">
     <h3><i class="fas fa-grip-horizontal"></i> Navbar</h3>
-    <div class="form-group">
-      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-        <input type="checkbox" id="cfgNavTransparent" style="width:16px;height:16px;accent-color:var(--primary);"/>
-        <span style="font-size:.85rem;color:var(--text);">Navbar transparente (fondo sin color)</span>
-      </label>
-    </div>
-    <div class="form-group" style="margin-top:14px;">
-      <label class="form-label">Posición del buscador</label>
-      <select class="form-select" id="cfgSearchPos">
-        <option value="right">Derecha (default)</option>
-        <option value="center">Centro</option>
-      </select>
-    </div>
-    <div style="margin-top:16px;">
-      <label class="form-label">Botones del navbar — orden y visibilidad</label>
-      <div id="navBtnsConfig" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"></div>
-      <button class="action-btn" onclick="openAddNavBtnModal()" style="margin-top:10px;border-color:rgba(62,166,255,.3);color:var(--primary);padding:8px 14px;">
-        <i class="fas fa-plus"></i> Agregar botón personalizado
-      </button>
-    </div>
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:6px;">El fondo, buscador y botones del navbar se configuran en <b>Gestionar Navbar</b>.</p>
+
   </div>
 
   <!-- Sidebar -->
@@ -728,6 +573,220 @@
     </button>
   </div>
   <p style="font-size:.72rem;color:var(--muted);margin-top:10px;">Los cambios se guardan localmente en el navegador.</p>
+
+  <div class="admin-block" style="border-color:rgba(248,113,113,.3);">
+    <h3 style="color:var(--red);"><i class="fas fa-exclamation-triangle"></i> Zona de limpieza</h3>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px;">
+      Borra todo el contenido guardado localmente (secciones de inicio, fondos, configuración de navbar, diseños guardados). 
+      <b>No borra cursos ni categorías de la base de datos.</b>
+    </p>
+    <button class="btn-ghost" style="border-color:rgba(248,113,113,.4);color:var(--red);" onclick="resetAllLocalContent()">
+      <i class="fas fa-trash-alt"></i> Limpiar contenido local (localStorage)
+    </button>
+  </div>
+</section>
+
+<!-- SUPERADMIN: GESTIONAR NAVBAR -->
+<section class="page-sec" id="sec-admin-navbar">
+  <div class="sec-header">
+    <div class="sec-title"><i class="fas fa-sliders-h" style="color:#e11d48;margin-right:8px;"></i>Gestionar <span style="color:#e11d48;">Navbar</span></div>
+  <!-- Unsaved changes bar -->
+  <div id="navbarUnsavedBar" style="display:none;background:rgba(240,192,64,.12);border:1px solid rgba(240,192,64,.4);border-radius:10px;padding:10px 16px;margin-bottom:14px;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+    <span style="font-size:.82rem;color:var(--gold);"><i class="fas fa-exclamation-triangle"></i> Tenés cambios sin guardar en Navbar</span>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-primary" style="padding:6px 14px;font-size:.78rem;" onclick="saveNavbarConfig()"><i class="fas fa-save"></i> Guardar</button>
+      <button class="btn-ghost" style="padding:6px 14px;font-size:.78rem;" onclick="discardNavbarChanges()">Descartar</button>
+    </div>
+  </div>
+
+    <button class="btn-primary" style="background:linear-gradient(135deg,#b91c1c,#e11d48);" onclick="saveNavbarConfig()">
+      <i class="fas fa-check"></i> Aplicar y guardar
+    </button>
+  </div>
+
+  <!-- Background -->
+  <div class="admin-block">
+    <h3><i class="fas fa-paint-brush"></i> Fondo del navbar</h3>
+    <div class="form-group">
+      <label class="form-label">Tipo de fondo</label>
+      <select class="form-select" id="navBgType" onchange="_markNavbarDirty();_toggleNavBgFields()">
+        <option value="default">Predeterminado (blanco/oscuro según tema)</option>
+        <option value="transparent">Transparente total</option>
+        <option value="color">Color sólido</option>
+        <option value="gradient">Degradado de 2 colores</option>
+        <option value="image">Imagen de fondo</option>
+      </select>
+    </div>
+    <div id="navBgColorRow" style="display:none;" class="form-group">
+      <label class="form-label">Color (podés usar rgba para transparencia)</label>
+      <input type="color" class="form-input" id="navBgColor1" value="#ffffff" style="height:42px;cursor:pointer;" oninput="_markNavbarDirty()" />
+      <div class="form-hint">Para transparencia parcial usá rgba, ej: rgba(0,0,0,0.5)</div>
+    </div>
+    <div id="navBgGradRow" style="display:none;">
+      <div class="form-group">
+        <label class="form-label">Dirección del degradado</label>
+        <select class="form-select" id="navBgGradDir">
+          <option value="lr">Izquierda → Derecha</option>
+          <option value="rl">Derecha → Izquierda</option>
+          <option value="tb">Arriba → Abajo</option>
+          <option value="bt">Abajo → Arriba</option>
+        </select>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Color 1</label>
+          <input type="color" class="form-input" id="navBgColor1" value="#1a7acc" style="height:42px;cursor:pointer;" oninput="_markNavbarDirty()" />
+          <div class="form-hint">Usar rgba para transparente</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Color 2</label>
+          <input type="color" class="form-input" id="navBgColor2" value="rgba(255,255,255,0)" style="height:42px;cursor:pointer;" oninput="_markNavbarDirty()" />
+          <div class="form-hint">Usar rgba para transparente</div>
+        </div>
+      </div>
+    </div>
+    <div id="navBgImgRow" style="display:none;" class="form-group">
+      <label class="form-label">URL de imagen de fondo</label>
+      <input class="form-input" id="navBgImgUrl" placeholder="https://...imagen.jpg"/>
+    </div>
+    <div id="navBgEffectsRow" style="display:none;">
+      <div class="form-group">
+        <label class="form-label">Sombra / Overlay <span id="navBgOverlayOpVal" style="color:var(--primary);font-weight:700;">0%</span></label>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="color" id="navBgOverlayColor" value="#000000" style="width:36px;height:36px;border:1px solid var(--border2);border-radius:6px;cursor:pointer;" oninput="_markNavbarDirty()" />
+          <input type="range" id="navBgOverlayOp" min="0" max="0.95" step="0.05" value="0" style="flex:1;accent-color:var(--primary);"
+            oninput="document.getElementById('navBgOverlayOpVal').textContent=Math.round(this.value*100)+'%'" oninput="_markNavbarDirty()" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Blur <span id="navBgBlurVal" style="color:var(--primary);font-weight:700;">0px</span></label>
+        <input type="range" id="navBgBlur" min="0" max="20" step="1" value="0" style="width:100%;accent-color:var(--primary);"
+          oninput="document.getElementById('navBgBlurVal').textContent=this.value+'px'" oninput="_markNavbarDirty()" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Buttons style -->
+  <div class="admin-block">
+    <h3><i class="fas fa-mouse-pointer"></i> Estilo de botones del navbar</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Estilo</label>
+        <select class="form-select" id="navBtnStyle">
+          <option value="default">Solo texto (sin borde)</option>
+          <option value="box">Recuadro con borde</option>
+          <option value="pill">Píldora (bordes circulares)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Radio (para Recuadro)</label>
+        <select class="form-select" id="navBtnRadius">
+          <option value="0px">Cuadradas</option>
+          <option value="4px">Levemente redondeadas</option>
+          <option value="8px">Redondeadas</option>
+          <option value="14px">Muy redondeadas</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-top:10px;">
+      <label class="form-label">Color de fondo de los botones (para Recuadro o Píldora)</label>
+      <select class="form-select" id="navBtnBgType" style="margin-bottom:8px;" onchange="_markNavbarDirty();_toggleNavBtnBgFields()">
+        <option value="none">Sin color de fondo</option>
+        <option value="color">Color sólido</option>
+        <option value="gradient">Degradado</option>
+      </select>
+      <div id="navBtnBgColorRow" style="display:none;display:flex;gap:8px;flex-wrap:wrap;">
+        <div class="form-group"><label class="form-label">Color</label>
+          <input type="color" id="navBtnBgColor1" value="#ffffff" style="height:38px;width:100%;border:1px solid var(--border2);border-radius:8px;cursor:pointer;" oninput="_markNavbarDirty()" />
+        </div>
+      </div>
+      <div id="navBtnBgGradRow" style="display:none;">
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Color 1</label>
+            <input type="color" id="navBtnBgColor1" value="rgba(255,255,255,.15)" style="height:38px;width:100%;border:1px solid var(--border2);border-radius:8px;cursor:pointer;" oninput="_markNavbarDirty()" /></div>
+          <div class="form-group"><label class="form-label">Color 2</label>
+            <input type="color" id="navBtnBgColor2" value="rgba(255,255,255,0)" style="height:38px;width:100%;border:1px solid var(--border2);border-radius:8px;cursor:pointer;" oninput="_markNavbarDirty()" /></div>
+          <div class="form-group form-full"><label class="form-label">Dirección</label>
+            <select class="form-select" id="navBtnBgGradDir">
+              <option value="lr">Izq → Der</option>
+              <option value="rl">Der → Izq</option>
+              <option value="tb">Arr → Abj</option>
+              <option value="bt">Abj → Arr</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search + theme toggle -->
+  <div class="admin-block">
+    <h3><i class="fas fa-search"></i> Buscador y tema</h3>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Posición del buscador</label>
+        <select class="form-select" id="navSearchPos">
+          <option value="left">Izquierda (al lado del logo)</option>
+          <option value="center">Centro</option>
+          <option value="right">Derecha (junto a login)</option>
+        </select>
+      </div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:10px;">
+      <input type="checkbox" id="navShowTheme" checked style="accent-color:var(--primary);" onchange="_markNavbarDirty()" />
+      <span style="font-size:.85rem;">Mostrar botón de tema oscuro/claro</span>
+    </label>
+  </div>
+
+  <!-- Nav buttons order -->
+  <div class="admin-block">
+    <h3><i class="fas fa-sort"></i> Orden y visibilidad de botones del navbar</h3>
+    <div id="navBtnsConfig" style="display:flex;flex-direction:column;gap:8px;margin-top:8px;"></div>
+    <button class="action-btn" onclick="openAddNavBtnModal()" style="margin-top:10px;border-color:rgba(62,166,255,.3);color:var(--primary);padding:8px 14px;">
+      <i class="fas fa-plus"></i> Agregar botón personalizado
+    </button>
+  </div>
+</section>
+
+<!-- SUPERADMIN: GESTIÓN DE DISEÑO -->
+<section class="page-sec" id="sec-admin-design">
+  <div class="sec-header">
+    <div class="sec-title"><i class="fas fa-palette" style="color:#e11d48;margin-right:8px;"></i>Gestión de <span style="color:#e11d48;">Diseño</span></div>
+  </div>
+
+  <!-- Save new design -->
+  <div class="admin-block">
+    <h3><i class="fas fa-save"></i> Guardar diseño actual</h3>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px;">Capturá el estado actual de colores, navbar, fondo de inicio y secciones como un diseño guardado.</p>
+    <div class="form-grid">
+      <div class="form-group">
+        <label class="form-label">Nombre del diseño</label>
+        <input class="form-input" id="newDesignName" placeholder="Ej: Sidebar y navbar azul moderno"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción (opcional)</label>
+        <input class="form-input" id="newDesignDesc" placeholder="Descripción breve..."/>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="saveNewDesignTheme()">
+      <i class="fas fa-save"></i> Guardar diseño actual
+    </button>
+  </div>
+
+  <!-- Reset to default -->
+  <div class="admin-block">
+    <h3><i class="fas fa-undo"></i> Restaurar por defecto</h3>
+    <p style="font-size:.82rem;color:var(--muted);margin-bottom:12px;">Limpia los colores personalizados, navbar, y secciones de inicio para volver al estado original.</p>
+    <button class="btn-ghost" style="border-color:rgba(248,113,113,.4);color:var(--red);" onclick="resetToDefaultDesign()">
+      <i class="fas fa-undo"></i> Restaurar configuración por defecto
+    </button>
+  </div>
+
+  <!-- Saved designs -->
+  <div class="admin-block">
+    <h3><i class="fas fa-list"></i> Diseños guardados</h3>
+    <div id="designThemesList" style="display:flex;flex-direction:column;gap:10px;margin-top:8px;"></div>
+  </div>
 </section>
 
 <!-- SUPERADMIN: GESTIONAR FOOTER -->
@@ -800,20 +859,30 @@
 <section class="page-sec" id="sec-admin-inicio-super">
   <div class="sec-header">
     <div class="sec-title"><i class="fas fa-th-list" style="color:#e11d48;margin-right:8px;"></i>Gestión <span style="color:#e11d48;">Secciones Inicio</span></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="btn-primary" style="background:linear-gradient(135deg,#b91c1c,#e11d48);" onclick="openAddSectionModal()">
-        <i class="fas fa-plus"></i> Agregar Sección
-      </button>
-      <button class="btn-primary" style="background:linear-gradient(135deg,#059669,#34d399);" onclick="applyHomeSections()">
-        <i class="fas fa-check"></i> Aplicar cambios
-      </button>
-    </div>
+    <button class="action-btn" onclick="showAdminInicio()" style="border-color:rgba(255,140,66,.3);color:var(--accent);padding:7px 14px;">
+      <i class="fas fa-home"></i> Panel Inicio
+    </button>
   </div>
   <div class="admin-block">
     <p style="font-size:.82rem;color:var(--muted);margin-bottom:14px;">
       Usá ▲▼ para reordenar. Presioná <b>Aplicar cambios</b> para guardar el orden y verlo en Inicio.
     </p>
-    <div id="homeSectionsList" style="display:flex;flex-direction:column;gap:8px;"></div>
+    <div id="homeSectionsList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+    <!-- Action buttons at bottom -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+      <button class="btn-primary" style="background:linear-gradient(135deg,#b91c1c,#e11d48);" onclick="openAddSectionModal();_homeSectionsDirty=true;">
+        <i class="fas fa-plus"></i> Agregar Sección
+      </button>
+      <button class="btn-primary" style="background:linear-gradient(135deg,#6d28d9,#a78bfa);" onclick="openAddSpecialCatSection();_homeSectionsDirty=true;">
+        <i class="fas fa-layer-group"></i> Agregar categoría especial
+      </button>
+      <button class="btn-primary" style="background:linear-gradient(135deg,#059669,#34d399);" onclick="applyHomeSections()">
+        <i class="fas fa-check"></i> Aplicar cambios
+      </button>
+      <button class="btn-ghost" onclick="discardHomeSections()" style="border-color:rgba(248,113,113,.4);color:var(--red);">
+        <i class="fas fa-times"></i> Descartar cambios
+      </button>
+    </div>
   </div>
 </section>
 
@@ -952,7 +1021,7 @@
 <!-- ═══ BACKGROUND EDITOR MODAL ═══ -->
 <div class="modal-overlay" id="bgEditorModal">
   <div class="modal">
-    <button class="modal-close" onclick="document.getElementById('bgEditorModal').classList.remove('open')"><i class="fas fa-times"></i></button>
+    <button class="modal-close" onclick="const _m=document.getElementById('bgEditorModal');_m.classList.remove('open');_m.style.zIndex='';"><i class="fas fa-times"></i></button>
     <h3><i class="fas fa-fill-drip" style="color:#a78bfa;"></i> Fondo de la sección</h3>
 
     <div class="form-group">
@@ -1045,7 +1114,7 @@
     </div>
 
     <div class="modal-actions">
-      <button class="btn-ghost" onclick="document.getElementById('bgEditorModal').classList.remove('open')">Cancelar</button>
+      <button class="btn-ghost" onclick="const _bm=document.getElementById('bgEditorModal');_bm.classList.remove('open');_bm.style.zIndex='';">Cancelar</button>
       <button class="btn-primary" style="background:linear-gradient(135deg,#6d28d9,#a78bfa);" onclick="saveBgEditor()">
         <i class="fas fa-check"></i> Guardar fondo
       </button>
@@ -1055,7 +1124,7 @@
 <!-- ═══ ADD SECTION LAYOUT PICKER MODAL ═══ -->
 <div class="modal-overlay" id="addSectionModal">
   <div class="modal" style="width:min(720px,96vw);max-height:92vh;">
-    <button class="modal-close" onclick="document.getElementById('addSectionModal').classList.remove('open')"><i class="fas fa-times"></i></button>
+    <button class="modal-close" onclick="closeModal('addSectionModal')"><i class="fas fa-times"></i></button>
     <h3><i class="fas fa-plus-circle" style="color:var(--primary);"></i> Nueva Sección — Elegí el diseño</h3>
     <div class="form-group" style="margin-bottom:14px;">
       <label class="form-label">Nombre de la sección</label>
@@ -1064,7 +1133,7 @@
     <label class="form-label" style="margin-bottom:10px;">Tipo de sección</label>
     <div id="addSectionModalGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;max-height:360px;overflow-y:auto;padding:4px 2px;margin-bottom:18px;"></div>
     <div class="modal-actions">
-      <button class="btn-ghost" onclick="document.getElementById('addSectionModal').classList.remove('open')">Cancelar</button>
+      <button class="btn-ghost" onclick="closeModal('addSectionModal')">Cancelar</button>
       <button class="btn-primary" onclick="confirmAddSection()"><i class="fas fa-plus"></i> Crear sección</button>
     </div>
   </div>
